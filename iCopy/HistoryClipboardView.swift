@@ -84,6 +84,9 @@ struct HistoryClipboardView: View {
         .padding(.horizontal)
         .onAppear {
             startMonitoringCopyShortcut()
+            if !clipboardItems.isEmpty {
+                currentIndex = 0  // 从第一个项目开始
+            }
         }
         .onDisappear {
             if let monitor = eventMonitor {
@@ -93,7 +96,7 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // ��算HStack的偏移量
+    // 算HStack的偏移量
     private func calculateHStackOffset(geometry: GeometryProxy) -> CGFloat {
         let itemWidth = getItemWidth(geometry: geometry)
         let totalItems = clipboardItems.count
@@ -291,17 +294,20 @@ struct HistoryClipboardView: View {
         if pasteboard.changeCount != lastChangeCount {
             lastChangeCount = pasteboard.changeCount
             
+            // 设置允许的类型
+            let allowedClasses: [AnyClass] = [NSURL.self, NSImage.self, NSString.self]
+            
             // 优先检查是否是文件类型
-            if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
+            if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] {
                 for url in fileURLs {
                     let type = determineFileType(url: url)
                     saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
                 }
-                return  // 如果是文件或文件夹，保存后返回
+                return
             }
             
-            // 然后检查是否是图片
-            if let images = pasteboard.readObjects(forClasses: [NSImage.self]) as? [NSImage] {
+            // 检查是否是图片
+            if let images = pasteboard.readObjects(forClasses: [NSImage.self], options: nil) as? [NSImage] {
                 for (index, image) in images.enumerated() {
                     if let tiffData = image.tiffRepresentation,
                        let bitmapImage = NSBitmapImageRep(data: tiffData) {
@@ -309,13 +315,12 @@ struct HistoryClipboardView: View {
                         saveToHistory(type: .image, content: "clipboard_image", title: title)
                     }
                 }
-                return  // 如果是图片保存后返回
+                return
             }
             
-            // 最后检查是否是文本
+            // 检查是否是文本
             if let textContent = pasteboard.string(forType: .string) {
-                // 确保文本内容不是文件路径
-                if !textContent.hasPrefix("file://") {
+                if !textContent.isEmpty && !textContent.hasPrefix("file://") {
                     saveToHistory(type: .text, content: textContent)
                 }
             }
