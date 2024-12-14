@@ -69,79 +69,49 @@ struct HistoryClipboardView: View {
         if pasteboard.changeCount != lastChangeCount {
             lastChangeCount = pasteboard.changeCount
             
-            // 检查并处理不同类型的内容
-            if let textContent = pasteboard.string(forType: .string) {
-                // 处理文本类型
-                saveToHistory(type: .text, content: textContent)
-            } else if let imageData = pasteboard.data(forType: .tiff),
-                      let image = NSImage(data: imageData) {
-                // 处理图片类型
-                if let url = saveImageToFile(image: image) {
-                    saveToHistory(type: .image, content: url.path, title: "Image")
-                }
-            } else if let urls = pasteboard.propertyList(forType: NSPasteboard.PasteboardType.fileURL) as? [String] {
-                // 处理文件类型
+            // 首先检查是否是文件类型（包括图片、媒体等文件）
+            if let urls = pasteboard.propertyList(forType: .fileURL) as? [String] {
                 for urlString in urls {
-                    if let url = URL(string: urlString.removingPercentEncoding ?? urlString) {
+                    if let url = URL(string: urlString) {
                         let type = determineFileType(url: url)
-                        let path = url.path
-                        print("File path: \(path)") // 调试用
-                        saveToHistory(type: type, content: path, title: url.lastPathComponent)
-                    }
-                }
-            } else {
-                // 尝试其他方式获取文件URL
-                if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
-                    for url in fileURLs {
-                        let type = determineFileType(url: url)
-                        print("File path (alternative): \(url.path)") // 调试用
                         saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
                     }
                 }
+            }
+            // 检查是否是本地文件拖拽
+            else if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
+                for url in fileURLs {
+                    let type = determineFileType(url: url)
+                    saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
+                }
+            }
+            // 检查是否是图片
+            else if let images = pasteboard.readObjects(forClasses: [NSImage.self]) as? [NSImage] {
+                for (index, image) in images.enumerated() {
+                    if let tiffData = image.tiffRepresentation,
+                       let bitmapImage = NSBitmapImageRep(data: tiffData) {
+                        let title = "Image \(index + 1)"
+                        saveToHistory(type: .image, content: "clipboard_image", title: title)
+                    }
+                }
+            }
+            // 最后检查是否是文本
+            else if let textContent = pasteboard.string(forType: .string) {
+                saveToHistory(type: .text, content: textContent)
             }
         }
     }
     
     private func determineFileType(url: URL) -> ClipboardType {
         let fileExtension = url.pathExtension.lowercased()
-        
         switch fileExtension {
-        case "jpg", "jpeg", "png", "gif", "bmp", "tiff":
+        case "jpg", "jpeg", "png", "gif", "bmp", "tiff", "heic":
             return .image
-        case "mp4", "mov", "avi", "wmv", "mp3", "wav", "m4a":
+        case "mp4", "mov", "avi", "wmv", "mp3", "wav", "m4a", "flac":
             return .media
         default:
             return .file
         }
-    }
-    
-    private func saveImageToFile(image: NSImage) -> URL? {
-        let fileManager = FileManager.default
-        guard let applicationSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        
-        let iCopyDirectory = applicationSupport.appendingPathComponent("iCopy/Images")
-        
-        do {
-            try fileManager.createDirectory(at: iCopyDirectory, withIntermediateDirectories: true, attributes: nil)
-            
-            let fileName = "\(UUID().uuidString).png"
-            let fileURL = iCopyDirectory.appendingPathComponent(fileName)
-            
-            // 将 NSImage 转换为 PNG 数据
-            if let tiffData = image.tiffRepresentation,
-               let bitmapImage = NSBitmapImageRep(data: tiffData),
-               let pngData = bitmapImage.representation(using: .png, properties: [:]) {
-                
-                try pngData.write(to: fileURL)
-                return fileURL
-            }
-        } catch {
-            print("保存图片失败: \(error.localizedDescription)")
-        }
-        
-        return nil
     }
     
     private func saveToHistory(type: ClipboardType, content: String, title: String? = nil) {
@@ -180,7 +150,7 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // 添加一个用于显示不同类型内容的视图
+    // 修改显示视图，添加点击操作
     private func itemView(for item: ClipboardItem) -> some View {
         VStack(alignment: .leading) {
             if let type = ClipboardType(rawValue: item.contentType ?? "") {
@@ -188,19 +158,16 @@ struct HistoryClipboardView: View {
                 case .text:
                     Text(item.content ?? "")
                         .lineLimit(2)
-                case .image:
-                    if let path = item.content,
-                       let url = URL(string: path),
-                       let image = NSImage(contentsOf: url) {
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: 40)
-                    }
-                case .file, .media:
+                        .onTapGesture {
+                            copyToClipboard(content: item.content ?? "")
+                        }
+                case .image, .file, .media:
                     HStack {
-                        Image(systemName: type == .media ? "play.circle" : "doc")
-                        Text(item.title ?? item.content ?? "")
+                        Image(systemName: getSystemImage(for: type))
+                        Text(item.title ?? getDefaultTitle(for: type))
+                    }
+                    .onTapGesture {
+                        openFile(path: item.content ?? "")
                     }
                 case .other:
                     Text(item.content ?? "")
@@ -208,6 +175,46 @@ struct HistoryClipboardView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+    
+    // 辅助函数
+    private func getSystemImage(for type: ClipboardType) -> String {
+        switch type {
+        case .image:
+            return "photo"
+        case .file:
+            return "doc"
+        case .media:
+            return "play.circle"
+        default:
+            return "doc"
+        }
+    }
+    
+    private func getDefaultTitle(for type: ClipboardType) -> String {
+        switch type {
+        case .image:
+            return "Image"
+        case .file:
+            return "File"
+        case .media:
+            return "Media"
+        default:
+            return "Item"
+        }
+    }
+    
+    // 复制内容到剪贴板
+    private func copyToClipboard(content: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(content, forType: .string)
+    }
+    
+    // 打开文件
+    private func openFile(path: String) {
+        let url = URL(fileURLWithPath: path)
+        NSWorkspace.shared.open(url)
     }
 }
 
