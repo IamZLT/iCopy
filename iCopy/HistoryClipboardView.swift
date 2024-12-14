@@ -16,6 +16,10 @@ struct HistoryClipboardView: View {
         animation: .default
     ) private var clipboardItems: FetchedResults<ClipboardItem>
     
+    // 更新卡片的圆角大小
+    private let cardCornerRadius: CGFloat = 12  // 卡片的圆角
+    private let contentCornerRadius: CGFloat = 6  // 内部底色的圆角
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
@@ -106,7 +110,7 @@ struct HistoryClipboardView: View {
     
     // 获取项目宽度
     private func getItemWidth(geometry: GeometryProxy) -> CGFloat {
-        return geometry.size.width * 0.22
+        return geometry.size.width * 0.18
     }
     
     // 获取项目高度
@@ -150,24 +154,34 @@ struct HistoryClipboardView: View {
     private func itemView(for item: ClipboardItem) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header - 显示类型
-            HStack {
-                Image(systemName: getSystemImage(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
-                    .foregroundColor(getTypeColor(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
-                Text(getTypeTitle(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+            HStack(spacing: 6) {
+                // 类型标签容器
+                HStack(spacing: 4) {
+                    Image(systemName: getSystemImage(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
+                        .font(.system(size: 10))
+                        .foregroundColor(.white)
+                    Text(getTypeTitle(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: contentCornerRadius)  // 使用内部底色的圆角
+                        .fill(getTypeColor(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
+                )
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(NSColor.controlBackgroundColor))
             
-            // Content - 显示内容
+            // Content 部分
             if let type = ClipboardType(rawValue: item.contentType ?? "") {
                 switch type {
                 case .text:
                     Text(item.content ?? "")
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                         .lineLimit(4)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -194,8 +208,9 @@ struct HistoryClipboardView: View {
             // Footer - 显示时间
             HStack {
                 Text(formatDate(item.timestamp ?? Date()))
-                    .font(.system(size: 11))
+                    .font(.system(size: 10))
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -204,30 +219,33 @@ struct HistoryClipboardView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: cardCornerRadius)  // 使用卡片的圆角
                 .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         )
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))  // 使用卡片的圆角
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(NSColor.separatorColor).opacity(0.2), lineWidth: 1)
+            RoundedRectangle(cornerRadius: cardCornerRadius)  // 使用卡片的圆角
+                .stroke(Color(NSColor.separatorColor).opacity(0.15), lineWidth: 1)
         )
+        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)  // 添加底部阴影
         .onTapGesture {
             handleTap(for: item)
         }
     }
     
-    // 获取类型颜色
+    // 更新颜色函数，使颜色更高级
     private func getTypeColor(for type: ClipboardType) -> Color {
         switch type {
+        case .text:
+            return Color(red: 0.25, green: 0.47, blue: 0.85)  // 深蓝色
         case .image:
-            return .blue
+            return Color(red: 0.36, green: 0.78, blue: 0.64)  // 绿松石色
         case .file:
-            return .orange
+            return Color(red: 0.95, green: 0.76, blue: 0.29)  // 金黄色
         case .media:
-            return .purple
-        default:
-            return .gray
+            return Color(red: 0.76, green: 0.34, blue: 0.78)  // 紫罗兰色
+        case .other:
+            return Color(red: 0.6, green: 0.6, blue: 0.6)  // 灰色
         }
     }
     
@@ -265,7 +283,16 @@ struct HistoryClipboardView: View {
         if pasteboard.changeCount != lastChangeCount {
             lastChangeCount = pasteboard.changeCount
             
-            // 首先检查是否是文件类型（包括图片、媒体等文件）
+            // 首先检查是否是文本内容
+            if let textContent = pasteboard.string(forType: .string) {
+                // 检查是否是文件路径
+                if !textContent.hasPrefix("file://") {
+                    saveToHistory(type: .text, content: textContent)
+                    return  // 如果是普通文本，保存后直接返回
+                }
+            }
+            
+            // 然后检查是否是文件类型
             if let urls = pasteboard.propertyList(forType: .fileURL) as? [String] {
                 for urlString in urls {
                     if let url = URL(string: urlString) {
@@ -273,16 +300,20 @@ struct HistoryClipboardView: View {
                         saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
                     }
                 }
+                return  // 如果是文件，保存后返回
             }
-            // 检查是否是本文件拖拽
-            else if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
+            
+            // 检查是否是文件拖拽
+            if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
                 for url in fileURLs {
                     let type = determineFileType(url: url)
                     saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
                 }
+                return  // 如果是拖拽文件，保存后返回
             }
-            // 检查是否是图片
-            else if let images = pasteboard.readObjects(forClasses: [NSImage.self]) as? [NSImage] {
+            
+            // 最后检查是否是图片
+            if let images = pasteboard.readObjects(forClasses: [NSImage.self]) as? [NSImage] {
                 for (index, image) in images.enumerated() {
                     if let tiffData = image.tiffRepresentation,
                        let bitmapImage = NSBitmapImageRep(data: tiffData) {
@@ -290,10 +321,6 @@ struct HistoryClipboardView: View {
                         saveToHistory(type: .image, content: "clipboard_image", title: title)
                     }
                 }
-            }
-            // 最后检查是否是文本
-            else if let textContent = pasteboard.string(forType: .string) {
-                saveToHistory(type: .text, content: textContent)
             }
         }
     }
@@ -373,7 +400,7 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // 复制内容到剪贴板
+    // 复制内容到���贴板
     private func copyToClipboard(content: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -389,20 +416,20 @@ struct HistoryClipboardView: View {
     // 添加新的辅助函数
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.dateFormat = "MM-dd HH:mm"
         return formatter.string(from: date)
     }
     
     private func getTypeTitle(for type: ClipboardType) -> String {
         switch type {
         case .text:
-            return "文本内容"
+            return "文本"
         case .image:
-            return "图片文件"
+            return "图片"
         case .file:
             return "文件"
         case .media:
-            return "媒体文件"
+            return "媒体"
         case .other:
             return "其他类型"
         }
