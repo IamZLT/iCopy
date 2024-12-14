@@ -221,8 +221,16 @@ struct HistoryClipboardView: View {
             
             Spacer()
             
-            // Footer - 显示时间
+            // Footer - 显示下标和时间
             HStack {
+                // 左侧显示下标
+                Text("#\(clipboardItems.firstIndex(of: item) ?? 0)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary.opacity(0.8))
+                
+                Spacer()
+                
+                // 右侧显示时间
                 Text(formatDate(item.timestamp ?? Date()))
                     .font(.system(size: 10))
                     .foregroundColor(.secondary)
@@ -230,8 +238,7 @@ struct HistoryClipboardView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .background(Color(NSColor.controlBackgroundColor))
+            .frame(maxWidth: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
@@ -257,7 +264,7 @@ struct HistoryClipboardView: View {
         case .image:
             return Color(red: 0.36, green: 0.78, blue: 0.64)  // 绿松石色
         case .file:
-            return Color(red: 0.95, green: 0.76, blue: 0.29)  // 金黄��
+            return Color(red: 0.95, green: 0.76, blue: 0.29)  // 金黄
         case .folder:
             return Color(red: 0.5, green: 0.5, blue: 0.9)  // 柔和的蓝紫色
         case .media:
@@ -405,7 +412,7 @@ struct HistoryClipboardView: View {
                 
                 // 保存后立即更新UI
                 DispatchQueue.main.async {
-                    currentIndex = 0  // 将焦点设置到最新项目
+                    currentIndex = 0  // 将焦���设置到最新项目
                     updateVisibleItems()  // 更新可见项目
                 }
             } catch {
