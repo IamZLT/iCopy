@@ -196,6 +196,7 @@ struct HistoryClipboardView: View {
                             .lineLimit(1)  // 一行展示
                             .truncationMode(.tail)  // 超出部分显示省略号
                             .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)  // 添加水平内边距
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)  // 水平垂直居中
                     .padding(.vertical, 12)
@@ -228,7 +229,7 @@ struct HistoryClipboardView: View {
             RoundedRectangle(cornerRadius: cardCornerRadius)  // 使用卡片的圆角
                 .stroke(Color(NSColor.separatorColor).opacity(0.15), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)  // 添加底部��影
+        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)  // 添加底部阴影
         .onTapGesture {
             handleTap(for: item)
         }
