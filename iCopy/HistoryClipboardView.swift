@@ -148,43 +148,69 @@ struct HistoryClipboardView: View {
     
     // 修改项目视图
     private func itemView(for item: ClipboardItem) -> some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header - 显示类型
+            HStack {
+                Image(systemName: getSystemImage(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
+                    .foregroundColor(getTypeColor(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
+                Text(getTypeTitle(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            // Content - 显示内容
             if let type = ClipboardType(rawValue: item.contentType ?? "") {
                 switch type {
                 case .text:
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Image(systemName: "text.quote")
-                                .foregroundColor(.blue)
-                            Text("文本")
-                                .font(.headline)
-                        }
-                        Text(item.content ?? "")
-                            .font(.system(size: 14))
-                            .lineLimit(6)
-                    }
-                    .padding()
+                    Text(item.content ?? "")
+                        .font(.system(size: 13))
+                        .lineLimit(4)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 case .image, .file, .media:
-                    VStack(spacing: 15) {
+                    VStack(spacing: 8) {
                         Image(systemName: getSystemImage(for: type))
-                            .font(.system(size: 40))
+                            .font(.system(size: 32))
                             .foregroundColor(getTypeColor(for: type))
                         Text(item.title ?? getDefaultTitle(for: type))
-                            .font(.system(size: 14))
+                            .font(.system(size: 13))
                             .lineLimit(2)
                             .multilineTextAlignment(.center)
                     }
-                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
                 case .other:
                     Text(item.content ?? "")
                 }
             }
+            
+            Spacer()
+            
+            // Footer - 显示时间
+            HStack {
+                Text(formatDate(item.timestamp ?? Date()))
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .background(Color(NSColor.controlBackgroundColor))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(NSColor.separatorColor).opacity(0.2), lineWidth: 1)
         )
         .onTapGesture {
             handleTap(for: item)
@@ -358,6 +384,28 @@ struct HistoryClipboardView: View {
     private func openFile(path: String) {
         let url = URL(fileURLWithPath: path)
         NSWorkspace.shared.open(url)
+    }
+    
+    // 添加新的辅助函数
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
+    }
+    
+    private func getTypeTitle(for type: ClipboardType) -> String {
+        switch type {
+        case .text:
+            return "文本内容"
+        case .image:
+            return "图片文件"
+        case .file:
+            return "文件"
+        case .media:
+            return "媒体文件"
+        case .other:
+            return "其他类型"
+        }
     }
 }
 
