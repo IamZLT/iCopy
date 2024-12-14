@@ -192,11 +192,12 @@ struct HistoryClipboardView: View {
                             .font(.system(size: 32))
                             .foregroundColor(getTypeColor(for: type))
                         Text(item.title ?? getDefaultTitle(for: type))
-                            .font(.system(size: 13))
-                            .lineLimit(2)
+                            .font(.system(size: 11))  // 字体小一些
+                            .lineLimit(1)  // 一行展示
+                            .truncationMode(.tail)  // 超出部分显示省略号
                             .multilineTextAlignment(.center)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)  // 水平垂直居中
                     .padding(.vertical, 12)
                 case .other:
                     Text(item.content ?? "")
@@ -227,7 +228,7 @@ struct HistoryClipboardView: View {
             RoundedRectangle(cornerRadius: cardCornerRadius)  // 使用卡片的圆角
                 .stroke(Color(NSColor.separatorColor).opacity(0.15), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)  // 添加底部阴影
+        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)  // 添加底部��影
         .onTapGesture {
             handleTap(for: item)
         }
@@ -400,7 +401,7 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // 复制内容到���贴板
+    // 复制内容到贴板
     private func copyToClipboard(content: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
