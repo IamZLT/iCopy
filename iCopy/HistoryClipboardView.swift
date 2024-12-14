@@ -55,7 +55,8 @@ struct HistoryClipboardView: View {
                     }
                     
                     HStack(spacing: 25) {
-                        ForEach(Array(clipboardItems.enumerated()), id: \.element.timestamp) { index, item in
+                        ForEach(visibleIndices(), id: \.self) { index in
+                            let item = clipboardItems[getIndex(for: index)]
                             itemView(for: item)
                                 .frame(width: getItemWidth(geometry: geometry),
                                        height: getItemHeight(geometry: geometry))
@@ -99,20 +100,15 @@ struct HistoryClipboardView: View {
     // 算HStack的偏移量
     private func calculateHStackOffset(geometry: GeometryProxy) -> CGFloat {
         let itemWidth = getItemWidth(geometry: geometry)
-        let totalItems = clipboardItems.count
-        let totalOffset = -(CGFloat(currentIndex) * (itemWidth + 25))
+        let spacing: CGFloat = 25
         
-        // 计算循环滚动的偏移量
-        let loopOffset: CGFloat
-        if currentIndex == 0 && dragOffset > 0 {
-            loopOffset = CGFloat(totalItems) * (itemWidth + 25)
-        } else if currentIndex == totalItems - 1 && dragOffset < 0 {
-            loopOffset = -CGFloat(totalItems) * (itemWidth + 25)
-        } else {
-            loopOffset = 0
-        }
+        // 始终将当前索引对应的卡片放在中间
+        let centeringOffset = geometry.size.width / 2 - itemWidth / 2
         
-        return geometry.size.width / 2 - itemWidth / 2 + totalOffset + loopOffset + dragOffset
+        // 计算相对于中心的偏移量
+        let relativeOffset = -3 * (itemWidth + spacing) // 将第一个卡片向左偏移3个位置
+        
+        return centeringOffset + relativeOffset + dragOffset
     }
     
     // 获取项目宽度
@@ -127,23 +123,33 @@ struct HistoryClipboardView: View {
     
     // 获取缩放比例
     private func getScale(index: Int) -> CGFloat {
-        let distance = abs(index - currentIndex)
+        // 计算相对于中心位置的距离
+        let relativeIndex = index - currentIndex
+        let distance = abs(relativeIndex)
+        
         if distance == 0 {
-            return 1.08
+            return 1.08  // 焦点卡片
         } else if distance == 1 {
-            return 0.9
+            return 0.9   // 相邻卡片
+        } else if distance == 2 {
+            return 0.8   // 边缘可见卡片
         } else {
-            return 0.8
+            return 0     // 隐藏最外侧的卡片
         }
     }
     
-    // 获取垂直偏移
+    // 获取垂直移
     private func getOffset(index: Int) -> CGFloat {
-        let distance = abs(index - currentIndex)
+        // 计算相对于中心位置的距离
+        let relativeIndex = index - currentIndex
+        let distance = abs(relativeIndex)
+        
         if distance == 0 {
-            return -15
+            return -15   // 焦点卡片上移
+        } else if distance <= 2 {
+            return 0     // 可见卡片保持原位
         } else {
-            return 0
+            return 100   // 隐藏卡片移出视图
         }
     }
     
@@ -154,7 +160,19 @@ struct HistoryClipboardView: View {
     
     // 获取Z轴顺序
     private func getZIndex(index: Int) -> Double {
-        return index == currentIndex ? 1 : 0
+        // 计算相对于中心位置的距离
+        let relativeIndex = index - currentIndex
+        let distance = abs(relativeIndex)
+        
+        if distance == 0 {
+            return 3     // 焦点卡片最上层
+        } else if distance == 1 {
+            return 2     // 相邻卡片次层
+        } else if distance == 2 {
+            return 1     // 边缘卡片底层
+        } else {
+            return 0     // 隐藏卡片最底层
+        }
     }
     
     // 修改项目视图
@@ -260,7 +278,7 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // 处理点击事件
+    // 理点击事件
     private func handleTap(for item: ClipboardItem) {
         if let type = ClipboardType(rawValue: item.contentType ?? "") {
             switch type {
@@ -372,7 +390,7 @@ struct HistoryClipboardView: View {
             do {
                 let existingItems = try viewContext.fetch(request)
                 if let existingItem = existingItems.first {
-                    // 如果已存在，更新时间戳
+                    // 如果存在，更新时间戳
                     existingItem.timestamp = Date()
                 } else {
                     // 如果不存在，创建新项
@@ -436,7 +454,7 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // 复制内容到贴板
+    // 复制内容到板
     private func copyToClipboard(content: String) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
@@ -483,12 +501,29 @@ struct HistoryClipboardView: View {
         let threshold = geometry.size.width * 0.2
         withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
             if value.translation.width > threshold {
+                // 向右滑动
                 currentIndex = (currentIndex - 1 + clipboardItems.count) % clipboardItems.count
+                print("焦点移动到: \(currentIndex)")
             } else if value.translation.width < -threshold {
+                // 向左滑动
                 currentIndex = (currentIndex + 1) % clipboardItems.count
+                print("焦点移动到: \(currentIndex)")
             }
             dragOffset = 0
         }
+    }
+    
+    private func visibleIndices() -> [Int] {
+        let totalItems = clipboardItems.count
+        guard totalItems > 0 else { return [] }
+        
+        // 准备7个位置，但只显示中间5个
+        let indices = (-3...3).map { offset in 
+            let index = (currentIndex + offset + totalItems) % totalItems
+            return index
+        }
+        print("展现的下标: \(indices), 焦点下标: \(currentIndex)")
+        return indices
     }
 }
 
