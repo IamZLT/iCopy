@@ -14,5 +14,7 @@
 	<string>需要访问下载文件夹以处理剪贴板内容</string>
 	<key>NSFileProviderDomainUsageDescription</key>
 	<string>需要访问文件以处理剪贴板内容</string>
+	<key>NSFullDiskAccessUsageDescription</key>
+	<string>需要完全磁盘访问权限以处理剪贴板中的文件内容</string>
 </dict>
 </plist>
