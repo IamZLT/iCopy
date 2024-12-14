@@ -4,5 +4,15 @@
 <dict>
 	<key>NSAccessibilityUsageDescription</key>
 	<string></string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>需要访问权限以处理剪贴板内容</string>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>需要访问桌面文件夹以处理剪贴板内容</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>需要访问文档文件夹以处理剪贴板内容</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>需要访问下载文件夹以处理剪贴板内容</string>
+	<key>NSFileProviderDomainUsageDescription</key>
+	<string>需要访问文件以处理剪贴板内容</string>
 </dict>
 </plist>

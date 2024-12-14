@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import CoreData
 import UniformTypeIdentifiers
+import AVFoundation
 
 struct HistoryClipboardView: View {
     @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100"
@@ -169,7 +170,7 @@ struct HistoryClipboardView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header - 显示类型
             HStack(spacing: 6) {
-                // 类型标签容器
+                // 类型标签容��
                 HStack(spacing: 4) {
                     Image(systemName: getSystemImage(for: ClipboardType(rawValue: item.contentType ?? "") ?? .other))
                         .font(.system(size: 10))
@@ -200,20 +201,89 @@ struct HistoryClipboardView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                case .image, .file, .media, .folder:
+                        
+                case .image:
                     VStack(spacing: 8) {
-                        Image(systemName: getSystemImage(for: type))
-                            .font(.system(size: 32))
-                            .foregroundColor(getTypeColor(for: type))
-                        Text(item.title ?? getDefaultTitle(for: type))
-                            .font(.system(size: 11))  // 字体小一些
-                            .lineLimit(1)  // 一行展示
-                            .truncationMode(.tail)  // 超出部分显示省略号
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 8)  // 添加水平内边距
+                        VStack(spacing: 8) {
+                            if let path = item.content,
+                               let image = NSImage(contentsOfFile: path) {
+                                Image(nsImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: .infinity, maxHeight: 100)
+                            } else {
+                                Image(systemName: "photo")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(getTypeColor(for: type))
+                            }
+                            Text(item.title ?? getDefaultTitle(for: type))
+                                .font(.system(size: 11))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 12)  // 整个内容区域添加水平内边距
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)  // 水平垂直居中
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 8)
+                    
+                case .media:
+                    VStack(spacing: 8) {
+                        VStack(spacing: 8) {
+                            if let path = item.content {
+                                if let thumbnail = getMediaThumbnail(path: path) {
+                                    Image(nsImage: thumbnail)
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(maxWidth: .infinity, maxHeight: 100)
+                                } else {
+                                    Image(systemName: "play.circle")
+                                        .font(.system(size: 32))
+                                        .foregroundColor(getTypeColor(for: type))
+                                        .frame(maxWidth: .infinity, maxHeight: 60)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                }
+                            } else {
+                                Image(systemName: "play.circle")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(getTypeColor(for: type))
+                                    .frame(maxWidth: .infinity, maxHeight: 60)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            }
+                            Text(item.title ?? getDefaultTitle(for: type))
+                                .font(.system(size: 11))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 12)  // 整个内容区域添加水平内边距
+                    }
+                    .padding(.vertical, 8)
+                    
+                case .file, .folder:
+                    VStack(spacing: 8) {
+                        // 内容区域
+                        VStack(spacing: 8) {
+                            if let path = item.content {
+                                let icon = NSWorkspace.shared.icon(forFile: path)
+                                Image(nsImage: icon)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(maxWidth: .infinity, maxHeight: 60)
+                            } else {
+                                Image(systemName: type == .folder ? "folder" : "doc")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(getTypeColor(for: type))
+                            }
+                            Text(item.title ?? getDefaultTitle(for: type))
+                                .font(.system(size: 11))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 12)  // 整个内容区域添加水平内边距
+                    }
+                    .padding(.vertical, 8)
+                    
                 case .other:
                     Text(item.content ?? "")
                 }
@@ -412,7 +482,7 @@ struct HistoryClipboardView: View {
                 
                 // 保存后立即更新UI
                 DispatchQueue.main.async {
-                    currentIndex = 0  // 将焦���设置到最新项目
+                    currentIndex = 0  // 将焦点设置到最新项目
                     updateVisibleItems()  // 更新可见项目
                 }
             } catch {
@@ -448,7 +518,7 @@ struct HistoryClipboardView: View {
         case .file:
             return "File"
         case .folder:
-            return "Folder"  // 新增文件夹默认标题
+            return "Folder"  // 新增文件夹默认标���
         case .media:
             return "Media"
         case .other:
@@ -537,6 +607,21 @@ struct HistoryClipboardView: View {
         // 更新可见项目数组
         visibleItems = indices.map { clipboardItems[$0] }
         print("当前显示的索引: \(indices), 焦点位置: 3") // 3是中间位置的索引
+    }
+    
+    // 添加获取媒体缩略图的辅助函数
+    private func getMediaThumbnail(path: String) -> NSImage? {
+        let asset = AVAsset(url: URL(fileURLWithPath: path))
+        let imageGenerator = AVAssetImageGenerator(asset: asset)
+        imageGenerator.appliesPreferredTrackTransform = true
+        
+        do {
+            let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
+            return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        } catch {
+            print("无法生成媒体缩略图: \(error)")
+            return nil
+        }
     }
 }
 
