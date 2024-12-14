@@ -72,15 +72,7 @@ struct HistoryClipboardView: View {
                                 dragOffset = value.translation.width
                             }
                             .onEnded { value in
-                                let threshold = geometry.size.width * 0.2
-                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                    if value.translation.width > threshold && currentIndex > 0 {
-                                        currentIndex -= 1
-                                    } else if value.translation.width < -threshold && currentIndex < clipboardItems.count - 1 {
-                                        currentIndex += 1
-                                    }
-                                    dragOffset = 0
-                                }
+                                updateIndex(for: value, geometry: geometry)
                             }
                     )
                 }
@@ -101,11 +93,23 @@ struct HistoryClipboardView: View {
         }
     }
     
-    // 计算HStack的偏移量
+    // ��算HStack的偏移量
     private func calculateHStackOffset(geometry: GeometryProxy) -> CGFloat {
         let itemWidth = getItemWidth(geometry: geometry)
+        let totalItems = clipboardItems.count
         let totalOffset = -(CGFloat(currentIndex) * (itemWidth + 25))
-        return geometry.size.width/2 - itemWidth/2 + totalOffset + dragOffset
+        
+        // 计算循环滚动的偏移量
+        let loopOffset: CGFloat
+        if currentIndex == 0 && dragOffset > 0 {
+            loopOffset = CGFloat(totalItems) * (itemWidth + 25)
+        } else if currentIndex == totalItems - 1 && dragOffset < 0 {
+            loopOffset = -CGFloat(totalItems) * (itemWidth + 25)
+        } else {
+            loopOffset = 0
+        }
+        
+        return geometry.size.width / 2 - itemWidth / 2 + totalOffset + loopOffset + dragOffset
     }
     
     // 获取项目宽度
@@ -305,7 +309,7 @@ struct HistoryClipboardView: View {
                         saveToHistory(type: .image, content: "clipboard_image", title: title)
                     }
                 }
-                return  // 如果是图片，保存后返回
+                return  // 如果是图片保存后返回
             }
             
             // 最后检查是否是文本
@@ -448,6 +452,24 @@ struct HistoryClipboardView: View {
             return "媒体"
         case .other:
             return "其他类型"
+        }
+    }
+    
+    private func getIndex(for index: Int) -> Int {
+        let totalItems = clipboardItems.count
+        if totalItems == 0 { return 0 }
+        return (index + totalItems) % totalItems
+    }
+    
+    private func updateIndex(for value: DragGesture.Value, geometry: GeometryProxy) {
+        let threshold = geometry.size.width * 0.2
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+            if value.translation.width > threshold {
+                currentIndex = (currentIndex - 1 + clipboardItems.count) % clipboardItems.count
+            } else if value.translation.width < -threshold {
+                currentIndex = (currentIndex + 1) % clipboardItems.count
+            }
+            dragOffset = 0
         }
     }
 }
