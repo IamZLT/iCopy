@@ -223,13 +223,9 @@ struct ShortcutInputRow: View {
                         capturedKeys = []
                         focusedField = currentField
                     }
-                    .keyboardShortcutEventHandler { event in
-                        if focusedField == currentField {
-                            handleKeyPress(event: event)
-                        }
-                    }
+                    .keyboardShortcutEventHandler(onKeyDown: handleKeyPress)
                 
-                // ��加回车图标
+                // 加回车图标
                 if focusedField == currentField {
                     Image(systemName: "return")
                         .foregroundColor(.gray)
@@ -262,7 +258,7 @@ struct ShortcutInputRow: View {
             }
         } else {
             // 如果快捷键无效，调用无效快捷键处理函数
-            onInvalidShortcut?("快捷键必须包含 Command ��的组合！")
+            onInvalidShortcut?("快捷键必须包含 Command 的组合！")
         }
     }
     
@@ -273,46 +269,8 @@ struct ShortcutInputRow: View {
 }
 
 extension View {
-    func keyboardShortcutEventHandler(handler: @escaping (NSEvent) -> Void) -> some View {
-        // 扩展 View，添加键盘快捷键事件处理
-        self.background(KeyEventHandlerView(handler: handler))
-    }
-}
-
-struct KeyEventHandlerView: NSViewRepresentable {
-    let handler: (NSEvent) -> Void
-    
-    class Coordinator {
-        var localEventMonitor: Any?
-        let handler: (NSEvent) -> Void
-        
-        init(handler: @escaping (NSEvent) -> Void) {
-            self.handler = handler
-            // 在初始化时就设置监听器
-            self.localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                handler(event)
-                return event
-            }
-        }
-        
-        deinit {
-            if let monitor = localEventMonitor {
-                NSEvent.removeMonitor(monitor)
-                localEventMonitor = nil
-            }
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        return Coordinator(handler: handler)
-    }
-
-    func makeNSView(context: Context) -> NSView {
-        return NSView()
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        // 不在这里更新监听器，避免重复创建
+    func keyboardShortcutEventHandler(onKeyDown handler: @escaping (NSEvent) -> Void) -> some View {
+        self.background(KeyEventHandlerView(onKeyDown: handler))
     }
 }
 

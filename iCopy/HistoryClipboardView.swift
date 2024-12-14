@@ -7,6 +7,8 @@ struct HistoryClipboardView: View {
     @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100"
     @State private var lastChangeCount: Int = 0
     @State private var eventMonitor: Any?
+    @State private var currentIndex: Int = 0  // 当前选中项的索引
+    @State private var dragOffset: CGFloat = 0  // 拖动偏移量
     
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -26,14 +28,60 @@ struct HistoryClipboardView: View {
                     .bold()
             }
             
-            // 显示历史记录列表
-            List {
-                ForEach(clipboardItems, id: \.timestamp) { item in
-                    itemView(for: item)
+            // 轮播视图
+            GeometryReader { geometry in
+                ZStack {
+                    CustomContainerView { event in
+                        switch event.keyCode {
+                        case 123: // 左箭头
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                if currentIndex > 0 {
+                                    currentIndex -= 1
+                                }
+                            }
+                        case 124: // 右箭头
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                if currentIndex < clipboardItems.count - 1 {
+                                    currentIndex += 1
+                                }
+                            }
+                        default:
+                            break
+                        }
+                    }
+                    
+                    HStack(spacing: 25) {
+                        ForEach(Array(clipboardItems.enumerated()), id: \.element.timestamp) { index, item in
+                            itemView(for: item)
+                                .frame(width: getItemWidth(geometry: geometry),
+                                       height: getItemHeight(geometry: geometry))
+                                .scaleEffect(getScale(index: index))
+                                .offset(y: getOffset(index: index))
+                                .zIndex(getZIndex(index: index))
+                                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: currentIndex)
+                        }
+                    }
+                    .offset(x: calculateHStackOffset(geometry: geometry))
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                dragOffset = value.translation.width
+                            }
+                            .onEnded { value in
+                                let threshold = geometry.size.width * 0.2
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                    if value.translation.width > threshold && currentIndex > 0 {
+                                        currentIndex -= 1
+                                    } else if value.translation.width < -threshold && currentIndex < clipboardItems.count - 1 {
+                                        currentIndex += 1
+                                    }
+                                    dragOffset = 0
+                                }
+                            }
+                    )
                 }
             }
-            .frame(height: 150)
-            .cornerRadius(10)
+            .frame(height: 250)
             
             Spacer()
         }
@@ -45,6 +93,128 @@ struct HistoryClipboardView: View {
             if let monitor = eventMonitor {
                 NSEvent.removeMonitor(monitor)
                 eventMonitor = nil
+            }
+        }
+    }
+    
+    // 计算HStack的偏移量
+    private func calculateHStackOffset(geometry: GeometryProxy) -> CGFloat {
+        let itemWidth = getItemWidth(geometry: geometry)
+        let totalOffset = -(CGFloat(currentIndex) * (itemWidth + 25))
+        return geometry.size.width/2 - itemWidth/2 + totalOffset + dragOffset
+    }
+    
+    // 获取项目宽度
+    private func getItemWidth(geometry: GeometryProxy) -> CGFloat {
+        return geometry.size.width * 0.22
+    }
+    
+    // 获取项目高度
+    private func getItemHeight(geometry: GeometryProxy) -> CGFloat {
+        return getItemWidth(geometry: geometry) * 1.4
+    }
+    
+    // 获取缩放比例
+    private func getScale(index: Int) -> CGFloat {
+        let distance = abs(index - currentIndex)
+        if distance == 0 {
+            return 1.08
+        } else if distance == 1 {
+            return 0.9
+        } else {
+            return 0.8
+        }
+    }
+    
+    // 获取垂直偏移
+    private func getOffset(index: Int) -> CGFloat {
+        let distance = abs(index - currentIndex)
+        if distance == 0 {
+            return -15
+        } else {
+            return 0
+        }
+    }
+    
+    // 获取旋转角度
+    private func getRotation(index: Int) -> Double {
+        return 0
+    }
+    
+    // 获取Z轴顺序
+    private func getZIndex(index: Int) -> Double {
+        return index == currentIndex ? 1 : 0
+    }
+    
+    // 修改项目视图
+    private func itemView(for item: ClipboardItem) -> some View {
+        VStack(alignment: .leading) {
+            if let type = ClipboardType(rawValue: item.contentType ?? "") {
+                switch type {
+                case .text:
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Image(systemName: "text.quote")
+                                .foregroundColor(.blue)
+                            Text("文本")
+                                .font(.headline)
+                        }
+                        Text(item.content ?? "")
+                            .font(.system(size: 14))
+                            .lineLimit(6)
+                    }
+                    .padding()
+                case .image, .file, .media:
+                    VStack(spacing: 15) {
+                        Image(systemName: getSystemImage(for: type))
+                            .font(.system(size: 40))
+                            .foregroundColor(getTypeColor(for: type))
+                        Text(item.title ?? getDefaultTitle(for: type))
+                            .font(.system(size: 14))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                case .other:
+                    Text(item.content ?? "")
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
+        )
+        .onTapGesture {
+            handleTap(for: item)
+        }
+    }
+    
+    // 获取类型颜色
+    private func getTypeColor(for type: ClipboardType) -> Color {
+        switch type {
+        case .image:
+            return .blue
+        case .file:
+            return .orange
+        case .media:
+            return .purple
+        default:
+            return .gray
+        }
+    }
+    
+    // 处理点击事件
+    private func handleTap(for item: ClipboardItem) {
+        if let type = ClipboardType(rawValue: item.contentType ?? "") {
+            switch type {
+            case .text:
+                copyToClipboard(content: item.content ?? "")
+            case .image, .file, .media:
+                openFile(path: item.content ?? "")
+            default:
+                break
             }
         }
     }
@@ -78,7 +248,7 @@ struct HistoryClipboardView: View {
                     }
                 }
             }
-            // 检查是否是本地文件拖拽
+            // 检查是否是本文件拖拽
             else if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
                 for url in fileURLs {
                     let type = determineFileType(url: url)
@@ -148,33 +318,6 @@ struct HistoryClipboardView: View {
                 print("保存失败: \(error)")
             }
         }
-    }
-    
-    // 修改显示视图，添加点击操作
-    private func itemView(for item: ClipboardItem) -> some View {
-        VStack(alignment: .leading) {
-            if let type = ClipboardType(rawValue: item.contentType ?? "") {
-                switch type {
-                case .text:
-                    Text(item.content ?? "")
-                        .lineLimit(2)
-                        .onTapGesture {
-                            copyToClipboard(content: item.content ?? "")
-                        }
-                case .image, .file, .media:
-                    HStack {
-                        Image(systemName: getSystemImage(for: type))
-                        Text(item.title ?? getDefaultTitle(for: type))
-                    }
-                    .onTapGesture {
-                        openFile(path: item.content ?? "")
-                    }
-                case .other:
-                    Text(item.content ?? "")
-                }
-            }
-        }
-        .padding(.vertical, 4)
     }
     
     // 辅助函数
