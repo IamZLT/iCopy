@@ -186,7 +186,7 @@ struct HistoryClipboardView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                case .image, .file, .media:
+                case .image, .file, .media, .folder:
                     VStack(spacing: 8) {
                         Image(systemName: getSystemImage(for: type))
                             .font(.system(size: 32))
@@ -244,6 +244,8 @@ struct HistoryClipboardView: View {
             return Color(red: 0.36, green: 0.78, blue: 0.64)  // 绿松石色
         case .file:
             return Color(red: 0.95, green: 0.76, blue: 0.29)  // 金黄色
+        case .folder:
+            return Color(red: 0.5, green: 0.5, blue: 0.9)  // 柔和的蓝紫色
         case .media:
             return Color(red: 0.76, green: 0.34, blue: 0.78)  // 紫罗兰色
         case .other:
@@ -257,9 +259,9 @@ struct HistoryClipboardView: View {
             switch type {
             case .text:
                 copyToClipboard(content: item.content ?? "")
-            case .image, .file, .media:
+            case .image, .file, .media, .folder:
                 openFile(path: item.content ?? "")
-            default:
+            case .other:
                 break
             }
         }
@@ -285,36 +287,16 @@ struct HistoryClipboardView: View {
         if pasteboard.changeCount != lastChangeCount {
             lastChangeCount = pasteboard.changeCount
             
-            // 首先检查是否是文本内容
-            if let textContent = pasteboard.string(forType: .string) {
-                // 检查是否是文件路径
-                if !textContent.hasPrefix("file://") {
-                    saveToHistory(type: .text, content: textContent)
-                    return  // 如果是普通文本，保存后直接返回
-                }
-            }
-            
-            // 然后检查是否是文件类型
-            if let urls = pasteboard.propertyList(forType: .fileURL) as? [String] {
-                for urlString in urls {
-                    if let url = URL(string: urlString) {
-                        let type = determineFileType(url: url)
-                        saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
-                    }
-                }
-                return  // 如果是文件，保存后返回
-            }
-            
-            // 检查是否是文件拖拽
+            // 优先检查是否是文件类型
             if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self]) as? [URL] {
                 for url in fileURLs {
                     let type = determineFileType(url: url)
                     saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
                 }
-                return  // 如果是拖拽文件，保存后返回
+                return  // 如果是文件或文件夹，保存后返回
             }
             
-            // 最后检查是否是图片
+            // 然后检查是否是图片
             if let images = pasteboard.readObjects(forClasses: [NSImage.self]) as? [NSImage] {
                 for (index, image) in images.enumerated() {
                     if let tiffData = image.tiffRepresentation,
@@ -323,11 +305,28 @@ struct HistoryClipboardView: View {
                         saveToHistory(type: .image, content: "clipboard_image", title: title)
                     }
                 }
+                return  // 如果是图片，保存后返回
+            }
+            
+            // 最后检查是否是文本
+            if let textContent = pasteboard.string(forType: .string) {
+                // 确保文本内容不是文件路径
+                if !textContent.hasPrefix("file://") {
+                    saveToHistory(type: .text, content: textContent)
+                }
             }
         }
     }
     
     private func determineFileType(url: URL) -> ClipboardType {
+        let fileManager = FileManager.default
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+            if isDirectory.boolValue {
+                return .folder  // 如果是目录，返回文件夹类型
+            }
+        }
+        
         let fileExtension = url.pathExtension.lowercased()
         switch fileExtension {
         case "jpg", "jpeg", "png", "gif", "bmp", "tiff", "heic":
@@ -350,13 +349,18 @@ struct HistoryClipboardView: View {
             
             do {
                 let existingItems = try viewContext.fetch(request)
-                if existingItems.isEmpty {
+                if let existingItem = existingItems.first {
+                    // 如果已存在，更新时间戳
+                    existingItem.timestamp = Date()
+                } else {
+                    // 如果不存在，创建新项
                     let newItem = ClipboardItem(context: viewContext)
                     newItem.content = content
                     newItem.contentType = type.rawValue
                     newItem.timestamp = Date()
                     newItem.title = title
                     
+                    // 检查是否超过最大数量
                     if clipboardItems.count >= maxCount {
                         let deleteCount = clipboardItems.count - maxCount + 1
                         
@@ -366,9 +370,9 @@ struct HistoryClipboardView: View {
                             }
                         }
                     }
-                    
-                    try viewContext.save()
                 }
+                
+                try viewContext.save()
             } catch {
                 print("保存失败: \(error)")
             }
@@ -378,26 +382,34 @@ struct HistoryClipboardView: View {
     // 辅助函数
     private func getSystemImage(for type: ClipboardType) -> String {
         switch type {
+        case .text:
+            return "text.quote"  // 使用系统文本图标
         case .image:
             return "photo"
         case .file:
             return "doc"
+        case .folder:
+            return "folder"  // 使用系统文件夹图标
         case .media:
             return "play.circle"
-        default:
+        case .other:
             return "doc"
         }
     }
     
     private func getDefaultTitle(for type: ClipboardType) -> String {
         switch type {
+        case .text:
+            return "Text"
         case .image:
             return "Image"
         case .file:
             return "File"
+        case .folder:
+            return "Folder"  // 新增文件夹默认标题
         case .media:
             return "Media"
-        default:
+        case .other:
             return "Item"
         }
     }
@@ -430,6 +442,8 @@ struct HistoryClipboardView: View {
             return "图片"
         case .file:
             return "文件"
+        case .folder:
+            return "文件夹"  // 新增文件夹类型标题
         case .media:
             return "媒体"
         case .other:
