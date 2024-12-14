@@ -20,6 +20,9 @@ struct HistoryClipboardView: View {
     private let cardCornerRadius: CGFloat = 12  // 卡片的圆角
     private let contentCornerRadius: CGFloat = 6  // 内部底色的圆角
     
+    // 添加一个新的状态变量来存储当前显示的项目
+    @State private var visibleItems: [ClipboardItem] = []
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
@@ -39,15 +42,13 @@ struct HistoryClipboardView: View {
                         switch event.keyCode {
                         case 123: // 左箭头
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                if currentIndex > 0 {
-                                    currentIndex -= 1
-                                }
+                                currentIndex = (currentIndex - 1 + clipboardItems.count) % clipboardItems.count
+                                updateVisibleItems()
                             }
                         case 124: // 右箭头
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                if currentIndex < clipboardItems.count - 1 {
-                                    currentIndex += 1
-                                }
+                                currentIndex = (currentIndex + 1) % clipboardItems.count
+                                updateVisibleItems()
                             }
                         default:
                             break
@@ -55,11 +56,10 @@ struct HistoryClipboardView: View {
                     }
                     
                     HStack(spacing: 25) {
-                        ForEach(visibleIndices(), id: \.self) { index in
-                            let item = clipboardItems[getIndex(for: index)]
+                        ForEach(Array(visibleItems.enumerated()), id: \.element.timestamp) { index, item in
                             itemView(for: item)
                                 .frame(width: getItemWidth(geometry: geometry),
-                                       height: getItemHeight(geometry: geometry))
+                                     height: getItemHeight(geometry: geometry))
                                 .scaleEffect(getScale(index: index))
                                 .offset(y: getOffset(index: index))
                                 .zIndex(getZIndex(index: index))
@@ -86,7 +86,8 @@ struct HistoryClipboardView: View {
         .onAppear {
             startMonitoringCopyShortcut()
             if !clipboardItems.isEmpty {
-                currentIndex = 0  // 从第一个项目开始
+                currentIndex = 0
+                updateVisibleItems()
             }
         }
         .onDisappear {
@@ -105,8 +106,8 @@ struct HistoryClipboardView: View {
         // 始终将当前索引对应的卡片放在中间
         let centeringOffset = geometry.size.width / 2 - itemWidth / 2
         
-        // 计算相对于中心的偏移量
-        let relativeOffset = -3 * (itemWidth + spacing) // 将第一个卡片向左偏移3个位置
+        // 计算相对于中心的偏移量，固定显示位置
+        let relativeOffset = -3 * (itemWidth + spacing)
         
         return centeringOffset + relativeOffset + dragOffset
     }
@@ -123,33 +124,25 @@ struct HistoryClipboardView: View {
     
     // 获取缩放比例
     private func getScale(index: Int) -> CGFloat {
-        // 计算相对于中心位置的距离
-        let relativeIndex = index - currentIndex
-        let distance = abs(relativeIndex)
-        
-        if distance == 0 {
-            return 1.08  // 焦点卡片
-        } else if distance == 1 {
-            return 0.9   // 相邻卡片
-        } else if distance == 2 {
-            return 0.8   // 边缘可见卡片
+        if index == 3 {
+            return 1.08  // 中间位置
+        } else if index == 2 || index == 4 {
+            return 0.9   // 相邻位置
+        } else if index == 1 || index == 5 {
+            return 0.8   // 边缘位置
         } else {
-            return 0     // 隐藏最外侧的卡片
+            return 0     // 隐藏位置
         }
     }
     
     // 获取垂直移
     private func getOffset(index: Int) -> CGFloat {
-        // 计算相对于中心位置的距离
-        let relativeIndex = index - currentIndex
-        let distance = abs(relativeIndex)
-        
-        if distance == 0 {
-            return -15   // 焦点卡片上移
-        } else if distance <= 2 {
-            return 0     // 可见卡片保持原位
+        if index == 3 {
+            return -15   // 中间位置上移
+        } else if index >= 1 && index <= 5 {
+            return 0     // 可见位置
         } else {
-            return 100   // 隐藏卡片移出视图
+            return 100   // 隐藏位置
         }
     }
     
@@ -160,18 +153,14 @@ struct HistoryClipboardView: View {
     
     // 获取Z轴顺序
     private func getZIndex(index: Int) -> Double {
-        // 计算相对于中心位置的距离
-        let relativeIndex = index - currentIndex
-        let distance = abs(relativeIndex)
-        
-        if distance == 0 {
-            return 3     // 焦点卡片最上层
-        } else if distance == 1 {
-            return 2     // 相邻卡片次层
-        } else if distance == 2 {
-            return 1     // 边缘卡片底层
+        if index == 3 {
+            return 3     // 中间位置最上层
+        } else if index == 2 || index == 4 {
+            return 2     // 相邻位置次层
+        } else if index == 1 || index == 5 {
+            return 1     // 边缘位置底层
         } else {
-            return 0     // 隐藏卡片最底层
+            return 0     // 隐藏位置最底层
         }
     }
     
@@ -268,7 +257,7 @@ struct HistoryClipboardView: View {
         case .image:
             return Color(red: 0.36, green: 0.78, blue: 0.64)  // 绿松石色
         case .file:
-            return Color(red: 0.95, green: 0.76, blue: 0.29)  // 金黄色
+            return Color(red: 0.95, green: 0.76, blue: 0.29)  // 金黄��
         case .folder:
             return Color(red: 0.5, green: 0.5, blue: 0.9)  // 柔和的蓝紫色
         case .media:
@@ -313,7 +302,7 @@ struct HistoryClipboardView: View {
             lastChangeCount = pasteboard.changeCount
             print("剪贴板发生变化") // 调试输出1
             
-            // 检查剪贴板中可用的类型
+            // 检查剪贴板中可用的型
             let types = pasteboard.types ?? []
             print("剪贴板类型: \(types)") // 调试输出2
             
@@ -413,6 +402,12 @@ struct HistoryClipboardView: View {
                 }
                 
                 try viewContext.save()
+                
+                // 保存后立即更新UI
+                DispatchQueue.main.async {
+                    currentIndex = 0  // 将焦点设置到最新项目
+                    updateVisibleItems()  // 更新可见项目
+                }
             } catch {
                 print("保存失败: \(error)")
             }
@@ -503,27 +498,38 @@ struct HistoryClipboardView: View {
             if value.translation.width > threshold {
                 // 向右滑动
                 currentIndex = (currentIndex - 1 + clipboardItems.count) % clipboardItems.count
-                print("焦点移动到: \(currentIndex)")
+                updateVisibleItems()
             } else if value.translation.width < -threshold {
                 // 向左滑动
                 currentIndex = (currentIndex + 1) % clipboardItems.count
-                print("焦点移动到: \(currentIndex)")
+                updateVisibleItems()
             }
             dragOffset = 0
         }
     }
     
-    private func visibleIndices() -> [Int] {
+    // 更新可见项目数组
+    private func updateVisibleItems() {
         let totalItems = clipboardItems.count
-        guard totalItems > 0 else { return [] }
-        
-        // 准备7个位置，但只显示中间5个
-        let indices = (-3...3).map { offset in 
-            let index = (currentIndex + offset + totalItems) % totalItems
-            return index
+        guard totalItems > 0 else {
+            visibleItems = []
+            return
         }
-        print("展现的下标: \(indices), 焦点下标: \(currentIndex)")
-        return indices
+        
+        // 计算需要显示的7个索引
+        var indices: [Int] = []
+        for offset in -3...3 {
+            var index = currentIndex + offset
+            if index < 0 {
+                index += totalItems
+            }
+            index = index % totalItems
+            indices.append(index)
+        }
+        
+        // 更新可见项目数组
+        visibleItems = indices.map { clipboardItems[$0] }
+        print("当前显示的索引: \(indices), 焦点位置: 3") // 3是中间位置的索引
     }
 }
 
