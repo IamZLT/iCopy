@@ -293,35 +293,48 @@ struct HistoryClipboardView: View {
         
         if pasteboard.changeCount != lastChangeCount {
             lastChangeCount = pasteboard.changeCount
+            print("剪贴板发生变化") // 调试输出1
             
-            // 设置允许的类型
-            let allowedClasses: [AnyClass] = [NSURL.self, NSImage.self, NSString.self]
+            // 检查剪贴板中可用的类型
+            let types = pasteboard.types ?? []
+            print("剪贴板类型: \(types)") // 调试输出2
             
-            // 优先检查是否是文件类型
-            if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] {
-                for url in fileURLs {
-                    let type = determineFileType(url: url)
-                    saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
-                }
-                return
-            }
-            
-            // 检查是否是图片
-            if let images = pasteboard.readObjects(forClasses: [NSImage.self], options: nil) as? [NSImage] {
-                for (index, image) in images.enumerated() {
-                    if let tiffData = image.tiffRepresentation,
-                       let bitmapImage = NSBitmapImageRep(data: tiffData) {
-                        let title = "Image \(index + 1)"
-                        saveToHistory(type: .image, content: "clipboard_image", title: title)
+            // 1. 优先检查是否是文件类型（只在包含文件URL类型时检查）
+            if types.contains(.fileURL) {
+                if let fileURLs = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] {
+                    print("检测到文件类型") // 调试输出3
+                    for url in fileURLs {
+                        let type = determineFileType(url: url)
+                        saveToHistory(type: type, content: url.path, title: url.lastPathComponent)
                     }
+                    return
                 }
-                return
             }
             
-            // 检查是否是文本
-            if let textContent = pasteboard.string(forType: .string) {
-                if !textContent.isEmpty && !textContent.hasPrefix("file://") {
-                    saveToHistory(type: .text, content: textContent)
+            // 2. 检查是否是图片
+            if types.contains(.tiff) || types.contains(.png) {
+                if let images = pasteboard.readObjects(forClasses: [NSImage.self], options: nil) as? [NSImage] {
+                    print("检测到图片类型") // 调试输出4
+                    for (index, image) in images.enumerated() {
+                        if let tiffData = image.tiffRepresentation,
+                           let bitmapImage = NSBitmapImageRep(data: tiffData) {
+                            let title = "Image \(index + 1)"
+                            saveToHistory(type: .image, content: "clipboard_image", title: title)
+                        }
+                    }
+                    return
+                }
+            }
+            
+            // 3. 检查是否是文本
+            if types.contains(.string) {
+                print("开始检查文本") // 调试输出5
+                if let textContent = pasteboard.string(forType: .string) {
+                    print("获取到文本内容: \(textContent)") // 调试输出6
+                    if !textContent.isEmpty && !textContent.hasPrefix("file://") {
+                        print("保存文本内容") // 调试输出7
+                        saveToHistory(type: .text, content: textContent)
+                    }
                 }
             }
         }
