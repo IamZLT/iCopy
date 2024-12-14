@@ -29,9 +29,22 @@
 		228D0D3F2D003544004FE529 /* iCopyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iCopyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		225E97092D0D2E3200054E22 /* Exceptions for "iCopy" folder in "iCopy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 228D0D232D003543004FE529 /* iCopy */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		228D0D262D003543004FE529 /* iCopy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				225E97092D0D2E3200054E22 /* Exceptions for "iCopy" folder in "iCopy" target */,
+			);
 			path = iCopy;
 			sourceTree = "<group>";
 		};
@@ -397,8 +410,10 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"iCopy/Preview Content\"";
+				DEVELOPMENT_TEAM = MDWZAM326B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iCopy/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -422,8 +437,10 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"iCopy/Preview Content\"";
+				DEVELOPMENT_TEAM = MDWZAM326B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = iCopy/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

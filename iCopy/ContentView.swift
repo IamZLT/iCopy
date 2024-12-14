@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedView: String? = "HistoryClipboard"
+
     var body: some View {
-        NavigationView{
+        NavigationView {
             HStack(spacing: 0) {
                 // 左侧侧边栏
                 List {
@@ -18,24 +20,33 @@ struct ContentView: View {
                     .listRowBackground(Color.clear)
                     .padding(.bottom, 20)
                     
-                    NavigationLink(destination: Text("历史剪切板")) {
+                    NavigationLink(
+                        destination: HistoryClipboardView(),
+                        tag: "HistoryClipboard",
+                        selection: $selectedView
+                    ) {
                         MenuButton(icon: "clipboard", title: "历史剪切板")
                     }
-                    NavigationLink(destination: SettingsView()) {
+                    NavigationLink(
+                        destination: SettingsView(),
+                        tag: "Settings",
+                        selection: $selectedView
+                    ) {
                         MenuButton(icon: "gear", title: "通用设置")
                     }
                 }
                 .listStyle(SidebarListStyle())
-               .frame(width: 150)  // 确保宽度固定
-                
+                .frame(width: 150)  // 确保宽度固定
             }
             
             Divider()  // 添加分隔线
             
             // 右侧详细内容
-            Text("请选择一个选项")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.controlBackgroundColor))
+            if selectedView == "HistoryClipboard" {
+                HistoryClipboardView()
+            } else if selectedView == "Settings" {
+                SettingsView()
+            }
         }
         .navigationViewStyle(DoubleColumnNavigationViewStyle()) // 使用双列导航视图样式
     }

@@ -7,10 +7,10 @@ struct SettingsView: View {
     @AppStorage("quickPasteShortcut") private var quickPasteShortcut: String = "Cmd + Shift + P" 
     // 快速粘贴的快捷键
 
-    @State private var maxHistoryCount: String = "100" 
+    @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100" 
     // 最大历史记录数
 
-    @State private var autoCleanInterval: Double = 0.0 
+    @AppStorage("autoCleanInterval") private var autoCleanInterval: Double = 0.0 
     // 自动清理间隔（天）
 
     @State private var showAlert: Bool = false 
@@ -23,7 +23,7 @@ struct SettingsView: View {
     // 当前聚焦的字段
 
     enum FocusedField {
-        case openAppShortcut, quickPasteShortcut 
+        case openAppShortcut, quickPasteShortcut, maxHistoryCount 
         // 聚焦字段的枚举，表示当前输入的快捷键字段
     }
 
@@ -94,23 +94,19 @@ struct SettingsView: View {
                 .shadow(radius: 1)
                 .overlay(
                     VStack(alignment: .leading, spacing: 15) {
-                        ShortcutRow(label: 
-                        // 最大记录数的输入行
-
-                            "最大记录数:",
+                        ShortcutRow(
+                            label: "最大记录数:",
                             shortcut: $maxHistoryCount,
                             focusedField: $focusedField,
-                            currentField: nil,
-                            onInvalidShortcut: nil)
+                            currentField: .maxHistoryCount,
+                            onInvalidShortcut: nil
+                        )
                         HStack {
-                            Text("清理间隔 (天)") 
-                            // 清理间隔标签
-
+                            Text("清理间隔 (天)")
                             Spacer()
                             Slider(value: $autoCleanInterval, in: 0...30, step: 1)
                                 .frame(width: 90)
-                            Text("\(Int(autoCleanInterval)) 天") 
-                            // 显示当前清理间隔
+                            Text("\(Int(autoCleanInterval)) 天")
                                 .frame(width: 50)
                         }
                     }
@@ -140,28 +136,50 @@ struct ShortcutRow: View {
     @FocusState.Binding var focusedField: SettingsView.FocusedField?
     let currentField: SettingsView.FocusedField?
     let onInvalidShortcut: ((String) -> Void)?
+    
+    @State private var isEditing: Bool = false // Track editing state
 
     var body: some View {
         HStack {
-            Text(label) 
-            // 显示标签
-
+            Text(label)
             Spacer()
-            TextField("", text: $shortcut)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .frame(width: 150)
-                .multilineTextAlignment(.center) 
-                // 输入内容居中显示
-
-                .focused($focusedField, equals: currentField)
-                .onChange(of: focusedField) {
-                    // 监测焦点变化
-                    if focusedField == currentField {
-                        // 当前焦点字段
-                    } else {
-                        // 焦点离开当前字段，执行其他逻辑（如验证）
+            ZStack(alignment: .trailing) {
+                TextField("", text: $shortcut)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 150)
+                    .multilineTextAlignment(.center)
+                    .focused($focusedField, equals: currentField)
+                    .onTapGesture {
+                        isEditing = true
+                        focusedField = currentField // 确保设置焦点
                     }
+                    .onSubmit {
+                        isEditing = false
+                        // 在这里更新 maxHistoryCount 的值
+                        if let newValue = Int(shortcut) {
+                            // 假设 maxHistoryCount 是一个 Int 类型的变量
+                            // maxHistoryCount = newValue
+                        } else {
+                            // 如果输入无效，可以显示警告或重置为默认值
+                            onInvalidShortcut?("请输入有效的数字！")
+                        }
+                        // 延迟清除焦点以避免文本被选中
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            focusedField = nil
+                        }
+                    }
+                    .onChange(of: focusedField) { newValue in
+                        isEditing = (newValue == currentField)
+                    }
+                
+                // Display return icon only when editing
+                if isEditing {
+                    Image(systemName: "return")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 12))
+                        .padding(.trailing, 8)
                 }
+            }
         }
     }
 
@@ -187,7 +205,7 @@ struct ShortcutInputRow: View {
     let onInvalidShortcut: ((String) -> Void)?
     
     @State private var capturedKeys: [String] = [] 
-    // 捕获的按键数组
+    // 捕获按键数组
 
     var body: some View {
         HStack {
@@ -195,22 +213,30 @@ struct ShortcutInputRow: View {
             // 显示标签
 
             Spacer()
-            TextField("", text: $shortcut)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .frame(width: 150)
-                .multilineTextAlignment(.center)
-                .focused($focusedField, equals: currentField)
-                .onTapGesture {
-                    // 点击输入框时，清空捕获的按键并设置焦点
-                    capturedKeys = []
-                    focusedField = currentField
-                }
-                .keyboardShortcutEventHandler { event in
-                    // 处理键盘快捷键事件
-                    if focusedField == currentField {
-                        handleKeyPress(event: event)
+            ZStack(alignment: .trailing) {
+                TextField("", text: $shortcut)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .frame(width: 150)
+                    .multilineTextAlignment(.center)
+                    .focused($focusedField, equals: currentField)
+                    .onTapGesture {
+                        capturedKeys = []
+                        focusedField = currentField
                     }
+                    .keyboardShortcutEventHandler { event in
+                        if focusedField == currentField {
+                            handleKeyPress(event: event)
+                        }
+                    }
+                
+                // ��加回车图标
+                if focusedField == currentField {
+                    Image(systemName: "return")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 12))
+                        .padding(.trailing, 8)
                 }
+            }
         }
     }
 
@@ -236,7 +262,7 @@ struct ShortcutInputRow: View {
             }
         } else {
             // 如果快捷键无效，调用无效快捷键处理函数
-            onInvalidShortcut?("快捷键必须包含 Command 键的组合！")
+            onInvalidShortcut?("快捷键必须包含 Command ��的组合！")
         }
     }
     
@@ -258,31 +284,35 @@ struct KeyEventHandlerView: NSViewRepresentable {
     
     class Coordinator {
         var localEventMonitor: Any?
+        let handler: (NSEvent) -> Void
+        
+        init(handler: @escaping (NSEvent) -> Void) {
+            self.handler = handler
+            // 在初始化时就设置监听器
+            self.localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                handler(event)
+                return event
+            }
+        }
         
         deinit {
-            // 释放事件监视器
             if let monitor = localEventMonitor {
                 NSEvent.removeMonitor(monitor)
+                localEventMonitor = nil
             }
         }
     }
     
     func makeCoordinator() -> Coordinator {
-        return Coordinator()
+        return Coordinator(handler: handler)
     }
 
     func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        context.coordinator.localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            // 监视键盘按下事件
-            handler(event)
-            return nil
-        }
-        return view
+        return NSView()
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        // 更新 NSView 的逻辑（此处为空）
+        // 不在这里更新监听器，避免重复创建
     }
 }
 
