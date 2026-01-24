@@ -90,21 +90,6 @@ struct HistoryClipboardView: View {
                 currentIndex = 0
                 updateVisibleItems()
             }
-            
-            // 检查完全磁盘访问权限
-            if !DiskPermissionManager.shared.checkFullDiskAccess() {
-                // 创建一个警告对话框
-                let alert = NSAlert()
-                alert.messageText = "需要完全磁盘访问权限"
-                alert.informativeText = "为了正常处理剪贴板中的文件内容，iCopy 需要完全磁盘访问权限。是否现在设置？"
-                alert.alertStyle = .warning
-                alert.addButton(withTitle: "设置权限")
-                alert.addButton(withTitle: "稍后再说")
-                
-                if alert.runModal() == .alertFirstButtonReturn {
-                    DiskPermissionManager.shared.requestFullDiskAccess()
-                }
-            }
         }
         .onDisappear {
             if let monitor = eventMonitor {
@@ -366,19 +351,6 @@ struct HistoryClipboardView: View {
             case .text:
                 copyToClipboard(content: item.content ?? "")
             case .image, .file, .media, .folder:
-                if !DiskPermissionManager.shared.checkFullDiskAccess() {
-                    let alert = NSAlert()
-                    alert.messageText = "需要完全磁盘访问权限"
-                    alert.informativeText = "为了打开此文件，iCopy 需要完全磁盘访问权限。是否现在设置？"
-                    alert.alertStyle = .warning
-                    alert.addButton(withTitle: "设置权限")
-                    alert.addButton(withTitle: "取消")
-                    
-                    if alert.runModal() == .alertFirstButtonReturn {
-                        DiskPermissionManager.shared.requestFullDiskAccess()
-                    }
-                    return
-                }
                 openFile(path: item.content ?? "")
             case .other:
                 break

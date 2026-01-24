@@ -28,6 +28,13 @@ struct ContentView: View {
                         MenuButton(icon: "clipboard", title: "历史剪切板")
                     }
                     NavigationLink(
+                        destination: PromptManagementView(),
+                        tag: "PromptManagement",
+                        selection: $selectedView
+                    ) {
+                        MenuButton(icon: "text.bubble", title: "提示词管理")
+                    }
+                    NavigationLink(
                         destination: SettingsView(),
                         tag: "Settings",
                         selection: $selectedView
@@ -44,6 +51,8 @@ struct ContentView: View {
             // 右侧详细内容
             if selectedView == "HistoryClipboard" {
                 HistoryClipboardView()
+            } else if selectedView == "PromptManagement" {
+                PromptManagementView()
             } else if selectedView == "Settings" {
                 SettingsView()
             }

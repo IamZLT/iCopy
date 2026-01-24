@@ -4,8 +4,14 @@ struct SettingsView: View {
     @AppStorage("openAppShortcut") private var openAppShortcut: String = "Cmd + Shift + O" 
     // 打开应用的快捷键
 
-    @AppStorage("quickPasteShortcut") private var quickPasteShortcut: String = "Cmd + Shift + P" 
+    @AppStorage("quickPasteShortcut") private var quickPasteShortcut: String = "Cmd + Shift + P"
     // 快速粘贴的快捷键
+
+    @AppStorage("showClipboardShortcut") private var showClipboardShortcut: String = "Cmd + Shift + C"
+    // 显示剪贴板选择器的快捷键
+
+    @AppStorage("showPromptShortcut") private var showPromptShortcut: String = "Cmd + Shift + T"
+    // 显示提示词选择器的快捷键
 
     @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100" 
     // 最大历史记录数
@@ -23,7 +29,7 @@ struct SettingsView: View {
     // 当前聚焦的字段
 
     enum FocusedField {
-        case openAppShortcut, quickPasteShortcut, maxHistoryCount 
+        case openAppShortcut, quickPasteShortcut, showClipboardShortcut, showPromptShortcut, maxHistoryCount
         // 聚焦字段的枚举，表示当前输入的快捷键字段
     }
 
@@ -50,28 +56,31 @@ struct SettingsView: View {
                 .shadow(radius: 1)
                 .overlay(
                     VStack(alignment: .leading, spacing: 15) {
-                        ShortcutInputRow( 
-                        // 打开应用的快捷键输入行
-
+                        ShortcutInputRow(
                             label: "打开应用:",
                             shortcut: $openAppShortcut,
                             focusedField: $focusedField,
                             currentField: .openAppShortcut,
                             onInvalidShortcut: handleInvalidShortcut
                         )
-                        ShortcutInputRow( 
-                        // 快速粘贴的快捷键输入行
-
-                            label: "快速粘贴:",
-                            shortcut: $quickPasteShortcut,
+                        ShortcutInputRow(
+                            label: "显示剪贴板:",
+                            shortcut: $showClipboardShortcut,
                             focusedField: $focusedField,
-                            currentField: .quickPasteShortcut,
+                            currentField: .showClipboardShortcut,
+                            onInvalidShortcut: handleInvalidShortcut
+                        )
+                        ShortcutInputRow(
+                            label: "显示提示词:",
+                            shortcut: $showPromptShortcut,
+                            focusedField: $focusedField,
+                            currentField: .showPromptShortcut,
                             onInvalidShortcut: handleInvalidShortcut
                         )
                     }
                     .padding()
                 )
-                .frame(height: 100)
+                .frame(height: 150)
 
             HStack {
                 Image(systemName: "doc.on.clipboard") 

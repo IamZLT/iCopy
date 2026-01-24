@@ -4,37 +4,36 @@ import Cocoa
 @main
 struct iCopyApp: App {
     let persistenceController = PersistenceController.shared
-    
+    @StateObject private var permissionManager = PermissionManager.shared
+    @State private var showPermissionGuide = false
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .sheet(isPresented: $showPermissionGuide) {
+                    PermissionGuideView()
+                }
+                .onAppear {
+                    checkPermissionsOnLaunch()
+                }
         }
         .commands {
             CommandGroup(replacing: .windowSize) {} // 移除窗口大小调整相关命令
         }
         .windowStyle(.hiddenTitleBar)  // 隐藏标题栏
     }
-    
-    private func requestAccessibilityPermissions() {
-        let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        let accessEnabled = AXIsProcessTrustedWithOptions(options)
-        
-        if !accessEnabled {
-            print("需要辅助功能权限")
-            DispatchQueue.main.async {
-                self.showAlertForAccessibilityPermission()
+
+    // 启动时检查权限
+    private func checkPermissionsOnLaunch() {
+        permissionManager.checkAllPermissions()
+
+        // 延迟显示权限引导，避免与窗口初始化冲突
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if !permissionManager.hasAllRequiredPermissions() {
+                showPermissionGuide = true
             }
         }
-    }
-    
-    private func showAlertForAccessibilityPermission() {
-        let alert = NSAlert()
-        alert.messageText = "权限警告"
-        alert.informativeText = "应用程序需要辅助功能权限才能正常工作。请在系统偏好设置中启用此权限。"
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: "确定")
-        alert.runModal()
     }
 }
 
