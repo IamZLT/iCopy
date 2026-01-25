@@ -232,7 +232,6 @@ struct PromptManagementView: View {
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.horizontal, 8)
         }
         .padding(.horizontal, 24)
         .frame(height: 38)
