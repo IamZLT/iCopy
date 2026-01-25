@@ -29,43 +29,46 @@ struct CategoryEditorView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // 顶部标题栏
-            HStack {
-                Text(isEditing ? "编辑分组" : "新建分组")
-                    .font(.system(size: 20, weight: .semibold))
-                Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.secondary)
-                        .symbolRenderingMode(.hierarchical)
+        ZStack {
+            // 背景色
+            Color(NSColor.windowBackgroundColor)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // 顶部标题栏
+                HStack {
+                    Text(isEditing ? "编辑分组" : "新建分组")
+                        .font(.system(size: 20, weight: .semibold))
+                    Spacer()
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.secondary)
+                            .symbolRenderingMode(.hierarchical)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .keyboardShortcut(.escape)
                 }
-                .buttonStyle(PlainButtonStyle())
-                .keyboardShortcut(.escape)
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
-            .background(Color(NSColor.windowBackgroundColor))
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
 
-            Divider()
+                Divider()
 
-            // 表单内容
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    formContent
+                // 表单内容
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 28) {
+                        formContent
+                    }
+                    .padding(24)
                 }
-                .padding(24)
+
+                Divider()
+
+                // 底部按钮
+                footerView
             }
-            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-
-            Divider()
-
-            // 底部按钮
-            footerView
         }
         .frame(width: 480, height: 520)
-        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 表单内容

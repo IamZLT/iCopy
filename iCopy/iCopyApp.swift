@@ -24,6 +24,7 @@ struct iCopyApp: App {
         }
         .windowStyle(.hiddenTitleBar)  // 隐藏标题栏
         .windowResizability(.contentSize) // 窗口大小由内容决定，禁止用户调整
+        .defaultSize(width: 880, height: 692) // 设置默认窗口大小
     }
 
 
@@ -42,6 +43,8 @@ struct iCopyApp: App {
 
 // AppDelegate 用于控制窗口行为
 class AppDelegate: NSObject, NSApplicationDelegate {
+    private var configuredWindows = Set<Int>() // 记录已配置的窗口
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 设置所有窗口为固定大小
         setupFixedWindows()
@@ -71,6 +74,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func configureWindow(_ window: NSWindow) {
+        let windowNumber = window.windowNumber
+
+        // 如果窗口已经配置过，只更新大小约束，不再居中
+        if configuredWindows.contains(windowNumber) {
+            return
+        }
+
+        // 标记窗口已配置
+        configuredWindows.insert(windowNumber)
+
         // 设置固定窗口大小
         let fixedSize = NSSize(width: 880, height: 692)
         window.setContentSize(fixedSize)
@@ -86,7 +99,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 禁用缩放按钮
         window.standardWindowButton(.zoomButton)?.isEnabled = false
 
-        // 窗口居中
+        // 只在首次配置时居中
         window.center()
     }
 }

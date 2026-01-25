@@ -11,34 +11,28 @@ struct CategoryManagementView: View {
         animation: .default)
     private var categories: FetchedResults<PromptCategory>
 
-    @State private var showingAddCategory = false
-    @State private var editingCategory: PromptCategory?
-
     var body: some View {
-        VStack(spacing: 0) {
-            // 顶部标题栏
-            headerView
+        ZStack {
+            // 背景色
+            Color(NSColor.windowBackgroundColor)
+                .ignoresSafeArea()
 
-            Divider()
+            VStack(spacing: 0) {
+                // 顶部标题栏
+                headerView
 
-            // 分组列表
-            categoryListView
+                Divider()
 
-            Divider()
+                // 分组列表
+                categoryListView
 
-            // 底部按钮
-            footerView
+                Divider()
+
+                // 底部按钮
+                footerView
+            }
         }
-        .frame(width: 600, height: 500)
-        .background(Color(NSColor.windowBackgroundColor))
-        .sheet(isPresented: $showingAddCategory) {
-            CategoryEditorView(category: nil)
-                .environment(\.managedObjectContext, viewContext)
-        }
-        .sheet(item: $editingCategory) { category in
-            CategoryEditorView(category: category)
-                .environment(\.managedObjectContext, viewContext)
-        }
+        .frame(width: 500, height: 400)
     }
 
     // 顶部标题栏
@@ -59,7 +53,15 @@ struct CategoryManagementView: View {
 
             Spacer()
 
-            Button(action: { showingAddCategory = true }) {
+            Button(action: {
+                WindowManager.shared.showWindow(
+                    id: "addCategory",
+                    title: "新建分组",
+                    size: NSSize(width: 480, height: 520),
+                    content: CategoryEditorView(category: nil)
+                        .environment(\.managedObjectContext, viewContext)
+                )
+            }) {
                 HStack(spacing: 6) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 14))
@@ -77,7 +79,6 @@ struct CategoryManagementView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 分组列表
@@ -102,7 +103,15 @@ struct CategoryManagementView: View {
                     ForEach(categories) { category in
                         CategoryRowView(
                             category: category,
-                            onEdit: { editingCategory = category },
+                            onEdit: {
+                                WindowManager.shared.showWindow(
+                                    id: "editCategory_\(category.id?.uuidString ?? "")",
+                                    title: "编辑分组",
+                                    size: NSSize(width: 480, height: 520),
+                                    content: CategoryEditorView(category: category)
+                                        .environment(\.managedObjectContext, viewContext)
+                                )
+                            },
                             onDelete: { deleteCategory(category) }
                         )
                     }
@@ -110,7 +119,6 @@ struct CategoryManagementView: View {
                 .padding(20)
             }
         }
-        .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
     }
 
     // 底部按钮
@@ -133,7 +141,6 @@ struct CategoryManagementView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 删除分组

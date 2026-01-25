@@ -17,11 +17,8 @@ struct PromptManagementView: View {
         animation: .default)
     private var categories: FetchedResults<PromptCategory>
 
-    @State private var showingAddPrompt = false
-    @State private var editingPrompt: PromptItem?
     @State private var searchText = ""
     @State private var selectedCategoryID: UUID? = nil
-    @State private var showingCategoryManagement = false
 
     var filteredPrompts: [PromptItem] {
         prompts.filter { prompt in
@@ -57,7 +54,15 @@ struct PromptManagementView: View {
 
                 Spacer()
 
-                Button(action: { showingCategoryManagement = true }) {
+                Button(action: {
+                    WindowManager.shared.showWindow(
+                        id: "categoryManagement",
+                        title: "分组管理",
+                        size: NSSize(width: 500, height: 400),
+                        content: CategoryManagementView()
+                            .environment(\.managedObjectContext, viewContext)
+                    )
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "folder.fill")
                             .font(.system(size: 13))
@@ -72,7 +77,15 @@ struct PromptManagementView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                Button(action: { showingAddPrompt = true }) {
+                Button(action: {
+                    WindowManager.shared.showWindow(
+                        id: "addPrompt",
+                        title: "添加提示词",
+                        size: NSSize(width: 600, height: 500),
+                        content: PromptEditorView(prompt: nil)
+                            .environment(\.managedObjectContext, viewContext)
+                    )
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 14))
@@ -107,18 +120,6 @@ struct PromptManagementView: View {
                 promptListView
             }
         }
-        .sheet(isPresented: $showingAddPrompt) {
-            PromptEditorView(prompt: nil)
-                .environment(\.managedObjectContext, viewContext)
-        }
-        .sheet(item: $editingPrompt) { prompt in
-            PromptEditorView(prompt: prompt)
-                .environment(\.managedObjectContext, viewContext)
-        }
-        .sheet(isPresented: $showingCategoryManagement) {
-            CategoryManagementView()
-                .environment(\.managedObjectContext, viewContext)
-        }
     }
 
     // 空状态视图
@@ -144,13 +145,56 @@ struct PromptManagementView: View {
                 ForEach(filteredPrompts) { prompt in
                     PromptCardView(
                         prompt: prompt,
-                        onEdit: { editingPrompt = prompt },
+                        onEdit: {
+                            WindowManager.shared.showWindow(
+                                id: "editPrompt_\(prompt.id?.uuidString ?? "")",
+                                title: "编辑提示词",
+                                size: NSSize(width: 600, height: 500),
+                                content: PromptEditorView(prompt: prompt)
+                                    .environment(\.managedObjectContext, viewContext)
+                            )
+                        },
                         onDelete: { deletePrompt(prompt) },
-                        onToggleFavorite: { toggleFavorite(prompt) }
+                        onToggleFavorite: { toggleFavorite(prompt) },
+                        onDetail: {
+                            previewPrompt(prompt)
+                        }
                     )
                 }
             }
             .padding()
+        }
+    }
+
+    // 预览提示词
+    private func previewPrompt(_ prompt: PromptItem) {
+        // 创建临时文件来预览提示词内容
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "prompt_\(prompt.title ?? "untitled")_\(Date().timeIntervalSince1970).txt"
+        let fileURL = tempDir.appendingPathComponent(fileName)
+
+        // 构建预览内容
+        var previewContent = ""
+        previewContent += "标题: \(prompt.title ?? "未命名")\n"
+        previewContent += "创建时间: \(formatDate(prompt.createdAt ?? Date()))\n"
+        previewContent += "更新时间: \(formatDate(prompt.updatedAt ?? Date()))\n"
+
+        if let category = prompt.category {
+            previewContent += "分组: \(category.name ?? "未命名")\n"
+        }
+
+        if let tags = prompt.tags, !tags.isEmpty {
+            previewContent += "标签: \(tags)\n"
+        }
+
+        previewContent += "\n" + String(repeating: "-", count: 50) + "\n\n"
+        previewContent += prompt.content ?? "无内容"
+
+        do {
+            try previewContent.write(to: fileURL, atomically: true, encoding: .utf8)
+            QuickLookManager.shared.preview(url: fileURL)
+        } catch {
+            print("创建临时提示词文件失败: \(error)")
         }
     }
 
@@ -169,6 +213,13 @@ struct PromptManagementView: View {
             prompt.updatedAt = Date()
             try? viewContext.save()
         }
+    }
+
+    // 格式化日期
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.string(from: date)
     }
 
     // 搜索栏
@@ -237,97 +288,5 @@ struct PromptManagementView: View {
         .frame(height: 38)
         .padding(.top, 12)
         .padding(.bottom, 16)
-    }
-}
-
-// 自定义 NSScrollView 子类，支持鼠标滚轮和拖拽的水平滚动
-class CustomHorizontalScrollView: NSScrollView {
-    override func scrollWheel(with event: NSEvent) {
-        // 将垂直滚轮事件转换为水平滚动
-        if let clipView = self.contentView as? NSClipView {
-            var newOrigin = clipView.bounds.origin
-            newOrigin.x += event.scrollingDeltaY
-
-            // 限制滚动范围
-            if let documentView = self.documentView {
-                let maxX = max(0, documentView.bounds.width - clipView.bounds.width)
-                newOrigin.x = max(0, min(newOrigin.x, maxX))
-            }
-
-            clipView.scroll(to: newOrigin)
-            self.reflectScrolledClipView(clipView)
-        }
-    }
-}
-
-// 自定义文档视图，支持鼠标拖拽滚动
-class DraggableHostingView<Content: View>: NSHostingView<Content> {
-    private var isDragging = false
-    private var lastMouseLocation: NSPoint = .zero
-    private var initialScrollOrigin: NSPoint = .zero
-
-    override func mouseDown(with event: NSEvent) {
-        isDragging = true
-        lastMouseLocation = convert(event.locationInWindow, from: nil)
-        initialScrollOrigin = self.enclosingScrollView?.contentView.bounds.origin ?? .zero
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        if isDragging {
-            let currentLocation = convert(event.locationInWindow, from: nil)
-            let deltaX = currentLocation.x - lastMouseLocation.x
-
-            if let clipView = self.enclosingScrollView?.contentView as? NSClipView {
-                var newOrigin = clipView.bounds.origin
-                newOrigin.x = initialScrollOrigin.x - deltaX
-
-                // 限制滚动范围
-                let maxX = max(0, self.bounds.width - clipView.bounds.width)
-                newOrigin.x = max(0, min(newOrigin.x, maxX))
-
-                clipView.scroll(to: newOrigin)
-                self.enclosingScrollView?.reflectScrolledClipView(clipView)
-            }
-        }
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        isDragging = false
-    }
-}
-
-// 自定义水平滚动视图，用于解决 macOS 上 ScrollView 滚动问题
-struct HorizontalScrollView<Content: View>: NSViewRepresentable {
-    let content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    func makeNSView(context: Context) -> CustomHorizontalScrollView {
-        let scrollView = CustomHorizontalScrollView()
-
-        // 隐藏滚动条
-        scrollView.hasHorizontalScroller = false
-        scrollView.hasVerticalScroller = false
-        scrollView.horizontalScrollElasticity = .allowed
-        scrollView.usesPredominantAxisScrolling = false
-        scrollView.scrollerStyle = .overlay
-        scrollView.autohidesScrollers = true
-        scrollView.drawsBackground = false
-
-        let hostingView = DraggableHostingView(rootView: content)
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-
-        scrollView.documentView = hostingView
-
-        return scrollView
-    }
-
-    func updateNSView(_ nsView: CustomHorizontalScrollView, context: Context) {
-        if let hostingView = nsView.documentView as? DraggableHostingView<Content> {
-            hostingView.rootView = content
-            hostingView.invalidateIntrinsicContentSize()
-        }
     }
 }

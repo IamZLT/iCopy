@@ -6,6 +6,7 @@ struct PromptCardView: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     let onToggleFavorite: () -> Void
+    let onDetail: () -> Void
 
     @State private var showingDeleteAlert = false
     @State private var isCopied = false
@@ -73,6 +74,17 @@ struct PromptCardView: View {
                 // 操作按钮（悬停时显示）
                 if isHovered {
                     HStack(spacing: 8) {
+                        Button(action: onDetail) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 12))
+                                Text("详情")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundColor(.blue)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+
                         Button(action: copyToClipboard) {
                             HStack(spacing: 4) {
                                 Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc")

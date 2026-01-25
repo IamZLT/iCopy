@@ -5,18 +5,22 @@ struct ClipboardItemCard: View {
     let item: ClipboardItem
     let onCopy: () -> Void
     let onDelete: () -> Void
+    let onDetail: () -> Void
 
     @State private var isHovered = false
     @State private var isCopied = false
     @State private var showingDeleteAlert = false
 
+    // 是否应该显示缩略图
+    private var shouldShowThumbnail: Bool {
+        // 所有类型都显示缩略图
+        return true
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            // 标题栏
-            headerView
-
-            // 内容预览
-            contentPreview
+            // 主内容区域（左边：标签+内容，右边：缩略图）
+            mainContentView
 
             Divider()
 
@@ -67,7 +71,135 @@ struct ClipboardItemCard: View {
             .cornerRadius(6)
 
             Spacer()
+        }
+    }
 
+    // 主内容区域
+    private var mainContentView: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // 左边：标签 + 内容（内容垂直居中）
+            VStack(alignment: .leading, spacing: 0) {
+                // 标签在顶部
+                headerView
+
+                Spacer()
+
+                // 内容在中间（垂直居中）
+                contentPreview
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // 右边：缩略图
+            if shouldShowThumbnail {
+                thumbnailView
+            }
+        }
+        .frame(minHeight: 60) // 确保至少有缩略图的高度
+    }
+
+    // 内容预览
+    private var contentPreview: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let content = item.content {
+                Text(content)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+
+    // 缩略图视图
+    private var thumbnailView: some View {
+        Group {
+            if let type = ClipboardType(rawValue: item.contentType ?? "") {
+                switch type {
+                case .text:
+                    textThumbnail()
+                case .image:
+                    if let path = item.content {
+                        imageThumbnail(path: path)
+                    }
+                case .media:
+                    if let path = item.content {
+                        mediaThumbnail(path: path)
+                    }
+                case .file, .folder:
+                    if let path = item.content {
+                        fileThumbnail(path: path)
+                    }
+                case .other:
+                    placeholderThumbnail(icon: "doc", color: .gray)
+                }
+            }
+        }
+    }
+
+    // 文本缩略图
+    private func textThumbnail() -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                )
+                .frame(width: 60, height: 60)
+
+            if let content = item.content {
+                Text(content)
+                    .font(.system(size: 8))
+                    .foregroundColor(.secondary)
+                    .lineLimit(8)
+                    .padding(4)
+                    .frame(width: 60, height: 60)
+            }
+        }
+    }
+
+    // 图片缩略图
+    private func imageThumbnail(path: String) -> some View {
+        Group {
+            if let image = NSImage(contentsOfFile: path) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .cornerRadius(6)
+                    .clipped()
+            } else {
+                placeholderThumbnail(icon: "photo", color: .green)
+            }
+        }
+    }
+
+    // 媒体缩略图
+    private func mediaThumbnail(path: String) -> some View {
+        placeholderThumbnail(icon: "play.circle", color: .purple)
+    }
+
+    // 文件缩略图
+    private func fileThumbnail(path: String) -> some View {
+        let isFolder = (try? FileManager.default.attributesOfItem(atPath: path)[.type] as? FileAttributeType) == .typeDirectory
+        return placeholderThumbnail(icon: isFolder ? "folder" : "doc", color: isFolder ? .blue : .orange)
+    }
+
+    // 占位符缩略图
+    private func placeholderThumbnail(icon: String, color: Color) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6)
+                .fill(color.opacity(0.15))
+                .frame(width: 60, height: 60)
+
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundColor(color)
+        }
+    }
+
+    // 底部操作栏
+    private var footerView: some View {
+        HStack(spacing: 12) {
             // 时间信息
             HStack(spacing: 4) {
                 Image(systemName: "clock")
@@ -76,26 +208,23 @@ struct ClipboardItemCard: View {
                     .font(.system(size: 11))
             }
             .foregroundColor(.secondary)
-        }
-    }
 
-    // 内容预览
-    private var contentPreview: some View {
-        Text(item.content ?? "")
-            .font(.system(size: 14))
-            .foregroundColor(.secondary)
-            .lineLimit(3)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // 底部操作栏
-    private var footerView: some View {
-        HStack(spacing: 12) {
             Spacer()
 
             // 操作按钮（悬停时显示）
             if isHovered {
                 HStack(spacing: 8) {
+                    Button(action: onDetail) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 12))
+                            Text("详情")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(.blue)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
                     Button(action: handleCopy) {
                         HStack(spacing: 4) {
                             Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc")

@@ -35,49 +35,53 @@ struct PromptEditorView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // 顶部标题栏
-            HStack {
-                Text(isEditing ? "编辑提示词" : "添加提示词")
-                    .font(.title2)
-                    .bold()
-                Spacer()
-                Button("取消") {
-                    dismiss()
+        ZStack {
+            // 背景色
+            Color(NSColor.windowBackgroundColor)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // 顶部标题栏
+                HStack {
+                    Text(isEditing ? "编辑提示词" : "添加提示词")
+                        .font(.title2)
+                        .bold()
+                    Spacer()
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.escape)
                 }
-                .keyboardShortcut(.escape)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+                .padding()
 
-            Divider()
+                Divider()
 
-            // 表单内容
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    formContent
+                // 表单内容
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        formContent
+                    }
+                    .padding()
+                }
+
+                Divider()
+
+                // 底部按钮栏
+                HStack {
+                    Spacer()
+                    Button("取消") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.escape)
+
+                    Button(isEditing ? "保存" : "添加") {
+                        savePrompt()
+                    }
+                    .keyboardShortcut(.return)
+                    .disabled(title.isEmpty || content.isEmpty)
                 }
                 .padding()
             }
-
-            Divider()
-
-            // 底部按钮栏
-            HStack {
-                Spacer()
-                Button("取消") {
-                    dismiss()
-                }
-                .keyboardShortcut(.escape)
-
-                Button(isEditing ? "保存" : "添加") {
-                    savePrompt()
-                }
-                .keyboardShortcut(.return)
-                .disabled(title.isEmpty || content.isEmpty)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
         }
         .frame(width: 600, height: 500)
     }

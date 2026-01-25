@@ -11,6 +11,11 @@ docs/
 iCopyTests/
 iCopyUITests/
 
+# Core Data / SQLite Database
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 ## User settings
 xcuserdata/
 

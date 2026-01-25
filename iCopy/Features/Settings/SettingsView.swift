@@ -1,293 +1,355 @@
 import SwiftUI
+import ApplicationServices
+import UserNotifications
 
 struct SettingsView: View {
-    @AppStorage("openAppShortcut") private var openAppShortcut: String = "Cmd + Shift + O" 
-    // 打开应用的快捷键
-
+    // MARK: - AppStorage
+    @AppStorage("openAppShortcut") private var openAppShortcut: String = "Cmd + Shift + O"
     @AppStorage("quickPasteShortcut") private var quickPasteShortcut: String = "Cmd + Shift + P"
-    // 快速粘贴的快捷键
-
     @AppStorage("showClipboardShortcut") private var showClipboardShortcut: String = "Cmd + Shift + C"
-    // 显示剪贴板选择器的快捷键
-
     @AppStorage("showPromptShortcut") private var showPromptShortcut: String = "Cmd + Shift + T"
-    // 显示提示词选择器的快捷键
+    @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100"
+    @AppStorage("autoCleanInterval") private var autoCleanInterval: Double = 0.0
+    @AppStorage("pickerPosition") private var pickerPosition: String = "bottom"
 
-    @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100" 
-    // 最大历史记录数
-
-    @AppStorage("autoCleanInterval") private var autoCleanInterval: Double = 0.0 
-    // 自动清理间隔（天）
-
-    @State private var showAlert: Bool = false 
-    // 是否显示警告
-
-    @State private var alertMessage: String = "" 
-    // 警告信息
-
-    @FocusState private var focusedField: FocusedField? 
-    // 当前聚焦的字段
+    // MARK: - State
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = ""
+    @FocusState private var focusedField: FocusedField?
+    @State private var hasAccessibilityPermission: Bool = false
+    @State private var hasNotificationPermission: Bool = false
 
     enum FocusedField {
         case openAppShortcut, quickPasteShortcut, showClipboardShortcut, showPromptShortcut, maxHistoryCount
-        // 聚焦字段的枚举，表示当前输入的快捷键字段
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.purple.opacity(0.15))
-                        .frame(width: 40, height: 40)
+        VStack(spacing: 0) {
+            // 顶部工具栏
+            headerView
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
 
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.purple)
+            Divider()
+                .padding(.horizontal, 24)
+
+            // 内容区域
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 快捷键设置
+                    shortcutSection
+
+                    // 呼出位置设置
+                    pickerPositionSection
+
+                    // 剪切板设置
+                    clipboardSection
+
+                    // 权限设置
+                    permissionSection
+
+                    Spacer(minLength: 20)
                 }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 20)
+            }
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("提示"), message: Text(alertMessage), dismissButton: .default(Text("确定")))
+        }
+    }
 
+    // MARK: - 顶部标题
+    private var headerView: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.purple.opacity(0.15))
+                    .frame(width: 40, height: 40)
+
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.purple)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text("通用设置")
                     .font(.system(size: 22, weight: .bold))
-
-                Spacer()
+                Text("配置应用的各项功能")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 4)
 
-            RoundedRectangle(cornerRadius: 10) 
-            // 设置背景为圆角矩形
+            Spacer()
+        }
+    }
 
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(radius: 1)
-                .overlay(
-                    VStack(alignment: .leading, spacing: 15) {
-                        ShortcutInputRow(
-                            label: "打开应用:",
-                            shortcut: $openAppShortcut,
-                            focusedField: $focusedField,
-                            currentField: .openAppShortcut,
-                            onInvalidShortcut: handleInvalidShortcut
-                        )
-                        ShortcutInputRow(
-                            label: "显示剪贴板:",
-                            shortcut: $showClipboardShortcut,
-                            focusedField: $focusedField,
-                            currentField: .showClipboardShortcut,
-                            onInvalidShortcut: handleInvalidShortcut
-                        )
-                        ShortcutInputRow(
-                            label: "显示提示词:",
-                            shortcut: $showPromptShortcut,
-                            focusedField: $focusedField,
-                            currentField: .showPromptShortcut,
-                            onInvalidShortcut: handleInvalidShortcut
-                        )
-                    }
-                    .padding()
-                )
-                .frame(height: 150)
+    // MARK: - 快捷键设置
+    private var shortcutSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("快捷键")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                ShortcutEditRow(icon: "command", iconColor: .blue, title: "打开应用", shortcut: $openAppShortcut)
+                Divider().padding(.leading, 40)
+                ShortcutEditRow(icon: "doc.on.clipboard", iconColor: .green, title: "显示剪切板", shortcut: $showClipboardShortcut)
+                Divider().padding(.leading, 40)
+                ShortcutEditRow(icon: "text.bubble", iconColor: .orange, title: "显示提示词", shortcut: $showPromptShortcut)
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+        }
+    }
+
+    // MARK: - 呼出位置设置
+    private var pickerPositionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("呼出位置")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .padding(.leading, 4)
 
             HStack {
-                Image(systemName: "doc.on.clipboard") 
-                // 显示剪切板图标
+                Image(systemName: "location")
+                    .font(.system(size: 14))
+                    .foregroundColor(.purple)
+                    .frame(width: 24)
 
-                    .font(.title)
-                    .foregroundColor(.blue)
+                Text("卡片显示位置")
+                    .font(.system(size: 13))
+                    .foregroundColor(.primary)
 
-                Text("剪切板历史记录管理") 
-                // 剪切板历史记录管理标题
+                Spacer()
 
-                    .font(.title3)
-                    .bold()
+                Picker("", selection: $pickerPosition) {
+                    Text("屏幕顶部").tag("top")
+                    Text("屏幕底部").tag("bottom")
+                    Text("屏幕左侧").tag("left")
+                    Text("屏幕右侧").tag("right")
+                }
+                .pickerStyle(.menu)
+                .frame(width: 120)
             }
-
-            RoundedRectangle(cornerRadius: 10) 
-            // 设置背景为圆角矩形
-
-                .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(radius: 1)
-                .overlay(
-                    VStack(alignment: .leading, spacing: 15) {
-                        ShortcutRow(
-                            label: "最大记录数:",
-                            shortcut: $maxHistoryCount,
-                            focusedField: $focusedField,
-                            currentField: .maxHistoryCount,
-                            onInvalidShortcut: nil
-                        )
-                        HStack {
-                            Text("清理间隔 (天)")
-                            Spacer()
-                            Slider(value: $autoCleanInterval, in: 0...30, step: 1)
-                                .frame(width: 90)
-                            Text("\(Int(autoCleanInterval)) 天")
-                                .frame(width: 50)
-                        }
-                    }
-                    .padding()
-                )
-                .frame(height: 100)
-
-            Spacer()
-        }
-        .padding(.horizontal)
-        .alert(isPresented: $showAlert) {
-            // 显示警告框
-            Alert(title: Text("非法快捷键"), message: Text(alertMessage), dismissButton: .default(Text("确定")))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
         }
     }
 
-    private func handleInvalidShortcut(message: String) {
-        // 处理无效快捷键的逻辑
-        alertMessage = message
-        showAlert = true
+    // MARK: - 剪切板设置
+    private var clipboardSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("剪切板")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                HStack {
+                    Image(systemName: "number")
+                        .font(.system(size: 14))
+                        .foregroundColor(.blue)
+                        .frame(width: 24)
+
+                    Text("最大记录数")
+                        .font(.system(size: 13))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    TextField("", text: $maxHistoryCount)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+
+                Divider().padding(.leading, 40)
+
+                HStack {
+                    Image(systemName: "clock")
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                        .frame(width: 24)
+
+                    Text("自动清理")
+                        .font(.system(size: 13))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    Text("\(Int(autoCleanInterval)) 天")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                        .frame(width: 50)
+
+                    Slider(value: $autoCleanInterval, in: 0...30, step: 1)
+                        .frame(width: 120)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+        }
+    }
+
+    // MARK: - 权限设置
+    private var permissionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("权限")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+                .padding(.leading, 4)
+
+            VStack(spacing: 0) {
+                HStack {
+                    Image(systemName: "hand.raised")
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                        .frame(width: 24)
+
+                    Text("辅助功能权限")
+                        .font(.system(size: 13))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    if hasAccessibilityPermission {
+                        Text("已授权")
+                            .font(.system(size: 12))
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(4)
+                    } else {
+                        Button(action: {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }) {
+                            Text("打开设置")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+
+                Divider().padding(.leading, 40)
+
+                HStack {
+                    Image(systemName: "bell")
+                        .font(.system(size: 14))
+                        .foregroundColor(.purple)
+                        .frame(width: 24)
+
+                    Text("通知权限")
+                        .font(.system(size: 13))
+                        .foregroundColor(.primary)
+
+                    Spacer()
+
+                    if hasNotificationPermission {
+                        Text("已授权")
+                            .font(.system(size: 12))
+                            .foregroundColor(.green)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(4)
+                    } else {
+                        Button(action: {
+                            if let url = URL(string: "x-apple.systempreferences:com.apple.preference.notifications") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }) {
+                            Text("打开设置")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+        }
+        .onAppear {
+            checkPermissions()
+        }
+    }
+
+    // MARK: - 权限检测
+    private func checkPermissions() {
+        // 检查辅助功能权限
+        hasAccessibilityPermission = AXIsProcessTrusted()
+
+        // 检查通知权限
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                hasNotificationPermission = settings.authorizationStatus == .authorized
+            }
+        }
     }
 }
 
-struct ShortcutRow: View {
-    let label: String
+// MARK: - 快捷键编辑行组件
+struct ShortcutEditRow: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
     @Binding var shortcut: String
-    @FocusState.Binding var focusedField: SettingsView.FocusedField?
-    let currentField: SettingsView.FocusedField?
-    let onInvalidShortcut: ((String) -> Void)?
-    
-    @State private var isEditing: Bool = false // Track editing state
+    @State private var isEditing: Bool = false
 
     var body: some View {
         HStack {
-            Text(label)
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(iconColor)
+                .frame(width: 24)
+
+            Text(title)
+                .font(.system(size: 13))
+                .foregroundColor(.primary)
+
             Spacer()
-            ZStack(alignment: .trailing) {
+
+            if isEditing {
                 TextField("", text: $shortcut)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textFieldStyle(.roundedBorder)
                     .frame(width: 150)
-                    .multilineTextAlignment(.center)
-                    .focused($focusedField, equals: currentField)
-                    .onTapGesture {
-                        isEditing = true
-                        focusedField = currentField // 确保设置焦点
-                    }
                     .onSubmit {
                         isEditing = false
-                        // 在这里更新 maxHistoryCount 的值
-                        if let newValue = Int(shortcut) {
-                            // 假设 maxHistoryCount 是一个 Int 类型的变量
-                            // maxHistoryCount = newValue
-                        } else {
-                            // 如果输入无效，可以显示警告或重置为默认值
-                            onInvalidShortcut?("请输入有效的数字！")
-                        }
-                        // 延迟清除焦点以避免文本被选中
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            focusedField = nil
-                        }
                     }
-                    .onChange(of: focusedField) { newValue in
-                        isEditing = (newValue == currentField)
-                    }
-                
-                // Display return icon only when editing
-                if isEditing {
-                    Image(systemName: "return")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 12))
-                        .padding(.trailing, 8)
+            } else {
+                Button(action: { isEditing = true }) {
+                    Text(shortcut)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                        .cornerRadius(4)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
-
-    private func validateShortcut(_ value: String, onInvalidShortcut: (String) -> Void) {
-        // 验证快捷键的有效性
-        if !isValidShortcut(value) {
-            onInvalidShortcut("快捷键必须包含 Command 键的组合！")
-            shortcut = "Cmd + " // 重置为默认值
-        }
-    }
-
-    private func isValidShortcut(_ value: String) -> Bool {
-        // 检查快捷键是否有效
-        return value.lowercased().contains("cmd") && value.contains("+")
-    }
-}
-
-struct ShortcutInputRow: View {
-    let label: String
-    @Binding var shortcut: String
-    @FocusState.Binding var focusedField: SettingsView.FocusedField?
-    let currentField: SettingsView.FocusedField?
-    let onInvalidShortcut: ((String) -> Void)?
-    
-    @State private var capturedKeys: [String] = [] 
-    // 捕获按键数组
-
-    var body: some View {
-        HStack {
-            Text(label) 
-            // 显示标签
-
-            Spacer()
-            ZStack(alignment: .trailing) {
-                TextField("", text: $shortcut)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .frame(width: 150)
-                    .multilineTextAlignment(.center)
-                    .focused($focusedField, equals: currentField)
-                    .onTapGesture {
-                        capturedKeys = []
-                        focusedField = currentField
-                    }
-                    .keyboardShortcutEventHandler(onKeyDown: handleKeyPress)
-                
-                // 加回车图标
-                if focusedField == currentField {
-                    Image(systemName: "return")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 12))
-                        .padding(.trailing, 8)
-                }
-            }
-        }
-    }
-
-    private func handleKeyPress(event: NSEvent) {
-        // 处理按键事件
-        guard let characters = event.charactersIgnoringModifiers else { return }
-
-        var components: [String] = []
-
-        if event.modifierFlags.contains(.command) { components.append("Cmd") }
-        if event.modifierFlags.contains(.shift) { components.append("Shift") }
-        if event.modifierFlags.contains(.option) { components.append("Option") }
-        if event.modifierFlags.contains(.control) { components.append("Ctrl") }
-
-        components.append(characters.uppercased())
-        let newShortcut = components.joined(separator: " + ")
-
-        if isValidShortcut(newShortcut) {
-            // 如果快捷键有效，更新快捷键并清除焦点
-            shortcut = newShortcut
-            DispatchQueue.main.async {
-                focusedField = nil
-            }
-        } else {
-            // 如果快捷键无效，调用无效快捷键处理函数
-            onInvalidShortcut?("快捷键必须包含 Command 的组合！")
-        }
-    }
-    
-    private func isValidShortcut(_ value: String) -> Bool {
-        // 检查快捷键是否有效
-        return value.contains("Cmd") && value.contains("+")
-    }
-}
-
-extension View {
-    func keyboardShortcutEventHandler(onKeyDown handler: @escaping (NSEvent) -> Void) -> some View {
-        self.background(KeyEventHandlerView(onKeyDown: handler))
-    }
-}
-
-#Preview {
-    SettingsView() 
-    // 预览设置视图
 }

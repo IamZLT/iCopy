@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-01-25
+## [1.0.1]
 
 ### Added
 - **提示词管理功能**：全新的 AI 提示词管理系统
@@ -46,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ClipboardPickerView.swift` - 剪贴板选择器
   - `ClipboardPickerCardView.swift` - 剪贴板选择卡片组件
 
-## [1.0.0] - 2023-10-15
+## [1.0.0]
 
 ### Added
 - 剪贴板历史管理功能
