@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreData
+import AppKit
 
 struct PromptManagementView: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -35,82 +36,69 @@ struct PromptManagementView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 顶部工具栏
-            HStack {
-                Image(systemName: "text.bubble")
-                    .font(.title)
-                    .foregroundColor(.green)
-                Text("提示词管理")
-                    .font(.title3)
-                    .bold()
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.green.opacity(0.15))
+                        .frame(width: 40, height: 40)
+
+                    Image(systemName: "text.bubble.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.green)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("提示词管理")
+                        .font(.system(size: 22, weight: .bold))
+                    Text("\(prompts.count) 个提示词")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+
                 Spacer()
+
                 Button(action: { showingCategoryManagement = true }) {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "folder.fill")
+                            .font(.system(size: 13))
                         Text("管理分组")
+                            .font(.system(size: 13, weight: .medium))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
                     .background(Color.orange)
-                    .foregroundColor(.white)
                     .cornerRadius(8)
                 }
+                .buttonStyle(PlainButtonStyle())
+
                 Button(action: { showingAddPrompt = true }) {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
                         Text("添加提示词")
+                            .font(.system(size: 13, weight: .medium))
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.blue)
                     .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 7)
+                    .background(Color.accentColor)
                     .cornerRadius(8)
+                    .shadow(color: Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
+                .buttonStyle(PlainButtonStyle())
             }
-            .padding()
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
 
-            // 搜索和筛选栏
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-                TextField("搜索提示词...", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+            // 搜索栏
+            searchBar
 
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        // "全部"按钮
-                        Button(action: { selectedCategoryID = nil }) {
-                            Text("全部")
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(selectedCategoryID == nil ? Color.blue : Color(NSColor.controlBackgroundColor))
-                                .foregroundColor(selectedCategoryID == nil ? .white : .primary)
-                                .cornerRadius(6)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-
-                        // 数据库分组按钮
-                        ForEach(categories) { category in
-                            Button(action: { selectedCategoryID = category.id }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: category.icon ?? "folder")
-                                        .font(.caption)
-                                    Text(category.name ?? "未命名")
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(selectedCategoryID == category.id ? Color.blue : Color(NSColor.controlBackgroundColor))
-                                .foregroundColor(selectedCategoryID == category.id ? .white : .primary)
-                                .cornerRadius(6)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 10)
+            // 筛选栏
+            filterBar
 
             Divider()
+                .padding(.horizontal, 24) // 与搜索框和筛选栏保持一致的宽度
 
             // 提示词列表
             if filteredPrompts.isEmpty {
@@ -180,6 +168,167 @@ struct PromptManagementView: View {
             prompt.isFavorite.toggle()
             prompt.updatedAt = Date()
             try? viewContext.save()
+        }
+    }
+
+    // 搜索栏
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.secondary)
+                .font(.system(size: 14))
+
+            TextField("搜索提示词...", text: $searchText)
+                .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(size: 14))
+
+            if !searchText.isEmpty {
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.secondary)
+                        .font(.system(size: 14))
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
+        .padding(.horizontal, 24)
+    }
+
+    // 筛选栏
+    private var filterBar: some View {
+        HorizontalScrollView {
+            HStack(spacing: 8) {
+                // "全部"按钮
+                Button(action: { selectedCategoryID = nil }) {
+                    Text("全部")
+                        .font(.system(size: 13, weight: .medium))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(selectedCategoryID == nil ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                        .foregroundColor(selectedCategoryID == nil ? .white : .primary)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                // 数据库分组按钮
+                ForEach(categories) { category in
+                    Button(action: { selectedCategoryID = category.id }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: category.icon ?? "folder")
+                                .font(.system(size: 11))
+                            Text(category.name ?? "未命名")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(selectedCategoryID == category.id ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                        .foregroundColor(selectedCategoryID == category.id ? .white : .primary)
+                        .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+            .padding(.horizontal, 8)
+        }
+        .padding(.horizontal, 24)
+        .frame(height: 38)
+        .padding(.top, 12)
+        .padding(.bottom, 16)
+    }
+}
+
+// 自定义 NSScrollView 子类，支持鼠标滚轮和拖拽的水平滚动
+class CustomHorizontalScrollView: NSScrollView {
+    override func scrollWheel(with event: NSEvent) {
+        // 将垂直滚轮事件转换为水平滚动
+        if let clipView = self.contentView as? NSClipView {
+            var newOrigin = clipView.bounds.origin
+            newOrigin.x += event.scrollingDeltaY
+
+            // 限制滚动范围
+            if let documentView = self.documentView {
+                let maxX = max(0, documentView.bounds.width - clipView.bounds.width)
+                newOrigin.x = max(0, min(newOrigin.x, maxX))
+            }
+
+            clipView.scroll(to: newOrigin)
+            self.reflectScrolledClipView(clipView)
+        }
+    }
+}
+
+// 自定义文档视图，支持鼠标拖拽滚动
+class DraggableHostingView<Content: View>: NSHostingView<Content> {
+    private var isDragging = false
+    private var lastMouseLocation: NSPoint = .zero
+    private var initialScrollOrigin: NSPoint = .zero
+
+    override func mouseDown(with event: NSEvent) {
+        isDragging = true
+        lastMouseLocation = convert(event.locationInWindow, from: nil)
+        initialScrollOrigin = self.enclosingScrollView?.contentView.bounds.origin ?? .zero
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if isDragging {
+            let currentLocation = convert(event.locationInWindow, from: nil)
+            let deltaX = currentLocation.x - lastMouseLocation.x
+
+            if let clipView = self.enclosingScrollView?.contentView as? NSClipView {
+                var newOrigin = clipView.bounds.origin
+                newOrigin.x = initialScrollOrigin.x - deltaX
+
+                // 限制滚动范围
+                let maxX = max(0, self.bounds.width - clipView.bounds.width)
+                newOrigin.x = max(0, min(newOrigin.x, maxX))
+
+                clipView.scroll(to: newOrigin)
+                self.enclosingScrollView?.reflectScrolledClipView(clipView)
+            }
+        }
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        isDragging = false
+    }
+}
+
+// 自定义水平滚动视图，用于解决 macOS 上 ScrollView 滚动问题
+struct HorizontalScrollView<Content: View>: NSViewRepresentable {
+    let content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    func makeNSView(context: Context) -> CustomHorizontalScrollView {
+        let scrollView = CustomHorizontalScrollView()
+
+        // 隐藏滚动条
+        scrollView.hasHorizontalScroller = false
+        scrollView.hasVerticalScroller = false
+        scrollView.horizontalScrollElasticity = .allowed
+        scrollView.usesPredominantAxisScrolling = false
+        scrollView.scrollerStyle = .overlay
+        scrollView.autohidesScrollers = true
+        scrollView.drawsBackground = false
+
+        let hostingView = DraggableHostingView(rootView: content)
+        hostingView.translatesAutoresizingMaskIntoConstraints = false
+
+        scrollView.documentView = hostingView
+
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: CustomHorizontalScrollView, context: Context) {
+        if let hostingView = nsView.documentView as? DraggableHostingView<Content> {
+            hostingView.rootView = content
+            hostingView.invalidateIntrinsicContentSize()
         }
     }
 }

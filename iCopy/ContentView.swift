@@ -58,6 +58,7 @@ struct ContentView: View {
             }
         }
         .navigationViewStyle(DoubleColumnNavigationViewStyle()) // 使用双列导航视图样式
+        .frame(width: 880, height: 692) // 固定窗口大小
     }
 }
 

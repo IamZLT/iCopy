@@ -29,7 +29,8 @@ struct CategoryManagementView: View {
             // 底部按钮
             footerView
         }
-        .frame(width: 500, height: 400)
+        .frame(width: 600, height: 500)
+        .background(Color(NSColor.windowBackgroundColor))
         .sheet(isPresented: $showingAddCategory) {
             CategoryEditorView(category: nil)
                 .environment(\.managedObjectContext, viewContext)
@@ -42,58 +43,97 @@ struct CategoryManagementView: View {
 
     // 顶部标题栏
     private var headerView: some View {
-        HStack {
-            Image(systemName: "folder.fill")
-                .font(.title2)
-                .foregroundColor(.orange)
-            Text("分组管理")
-                .font(.title3)
-                .bold()
-            Spacer()
-            Button(action: { showingAddCategory = true }) {
-                HStack {
-                    Image(systemName: "plus.circle.fill")
-                    Text("添加分组")
-                }
-                .font(.caption)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(6)
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.orange.opacity(0.15))
+                    .frame(width: 36, height: 36)
+
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.orange)
             }
+
+            Text("分组管理")
+                .font(.system(size: 20, weight: .semibold))
+
+            Spacer()
+
+            Button(action: { showingAddCategory = true }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 14))
+                    Text("新建分组")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(Color.accentColor)
+                .cornerRadius(8)
+                .shadow(color: Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 分组列表
     private var categoryListView: some View {
         ScrollView {
-            LazyVStack(spacing: 10) {
-                ForEach(categories) { category in
-                    CategoryRowView(
-                        category: category,
-                        onEdit: { editingCategory = category },
-                        onDelete: { deleteCategory(category) }
-                    )
+            if categories.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "folder.badge.plus")
+                        .font(.system(size: 48))
+                        .foregroundColor(.secondary.opacity(0.5))
+                    Text("暂无分组")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("点击右上角按钮创建第一个分组")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary.opacity(0.8))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding()
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(categories) { category in
+                        CategoryRowView(
+                            category: category,
+                            onEdit: { editingCategory = category },
+                            onDelete: { deleteCategory(category) }
+                        )
+                    }
+                }
+                .padding(20)
             }
-            .padding()
         }
+        .background(Color(NSColor.controlBackgroundColor).opacity(0.3))
     }
 
     // 底部按钮
     private var footerView: some View {
         HStack {
             Spacer()
-            Button("关闭") {
-                dismiss()
+            Button(action: { dismiss() }) {
+                Text("完成")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(minWidth: 100)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 20)
+                    .background(Color.accentColor)
+                    .cornerRadius(8)
+                    .shadow(color: Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
             }
+            .buttonStyle(PlainButtonStyle())
             .keyboardShortcut(.escape)
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 删除分组

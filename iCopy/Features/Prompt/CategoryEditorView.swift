@@ -32,129 +32,213 @@ struct CategoryEditorView: View {
         VStack(spacing: 0) {
             // 顶部标题栏
             HStack {
-                Text(isEditing ? "编辑分组" : "添加分组")
-                    .font(.title3)
-                    .bold()
+                Text(isEditing ? "编辑分组" : "新建分组")
+                    .font(.system(size: 20, weight: .semibold))
                 Spacer()
-                Button("取消") {
-                    dismiss()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                        .symbolRenderingMode(.hierarchical)
                 }
+                .buttonStyle(PlainButtonStyle())
                 .keyboardShortcut(.escape)
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(Color(NSColor.windowBackgroundColor))
 
             Divider()
 
             // 表单内容
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 28) {
                     formContent
                 }
-                .padding()
+                .padding(24)
             }
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
 
             Divider()
 
             // 底部按钮
             footerView
         }
-        .frame(width: 400, height: 450)
+        .frame(width: 480, height: 520)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 表单内容
     private var formContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 24) {
             // 分组名称
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("分组名称")
-                    .font(.headline)
-                TextField("请输入分组名称", text: $name)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                TextField("例如：工作、学习、生活", text: $name)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14))
+                    .padding(10)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
             }
 
             // 图标选择
-            VStack(alignment: .leading, spacing: 8) {
-                Text("选择图标")
-                    .font(.headline)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("图标")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 10) {
                         ForEach(availableIcons, id: \.self) { icon in
-                            Button(action: { selectedIcon = icon }) {
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedIcon = icon
+                                }
+                            }) {
                                 Image(systemName: icon)
-                                    .font(.title2)
+                                    .font(.system(size: 20))
                                     .foregroundColor(selectedIcon == icon ? .white : .primary)
-                                    .frame(width: 50, height: 50)
-                                    .background(selectedIcon == icon ? Color.blue : Color(NSColor.controlBackgroundColor))
-                                    .cornerRadius(8)
+                                    .frame(width: 52, height: 52)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(selectedIcon == icon ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(selectedIcon == icon ? Color.clear : Color.gray.opacity(0.2), lineWidth: 1)
+                                    )
+                                    .shadow(color: selectedIcon == icon ? Color.accentColor.opacity(0.3) : Color.clear, radius: 8, x: 0, y: 4)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(.vertical, 4)
                 }
             }
 
             // 颜色选择
-            VStack(alignment: .leading, spacing: 8) {
-                Text("选择颜色")
-                    .font(.headline)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("颜色")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(availableColors, id: \.self) { color in
-                            Button(action: { selectedColor = color }) {
-                                Circle()
-                                    .fill(colorFromString(color))
-                                    .frame(width: 40, height: 40)
-                                    .overlay(
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedColor = color
+                                }
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(colorFromString(color))
+                                        .frame(width: 44, height: 44)
+
+                                    if selectedColor == color {
                                         Circle()
-                                            .stroke(selectedColor == color ? Color.primary : Color.clear, lineWidth: 3)
-                                    )
+                                            .stroke(Color.white, lineWidth: 3)
+                                            .frame(width: 44, height: 44)
+
+                                        Circle()
+                                            .stroke(colorFromString(color), lineWidth: 2)
+                                            .frame(width: 52, height: 52)
+                                    }
+                                }
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .padding(.vertical, 4)
                 }
             }
 
             // 预览
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text("预览")
-                    .font(.headline)
-                HStack(spacing: 12) {
-                    Image(systemName: selectedIcon)
-                        .font(.title)
-                        .foregroundColor(colorFromString(selectedColor))
-                        .frame(width: 50, height: 50)
-                        .background(Color(NSColor.controlBackgroundColor))
-                        .cornerRadius(8)
-                    Text(name.isEmpty ? "分组名称" : name)
-                        .font(.body)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(colorFromString(selectedColor).opacity(0.15))
+                            .frame(width: 56, height: 56)
+
+                        Image(systemName: selectedIcon)
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(colorFromString(selectedColor))
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(name.isEmpty ? "分组名称" : name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        Text("这是分组的预览效果")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+
+                    Spacer()
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(8)
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+                )
             }
         }
     }
 
     // 底部按钮
     private var footerView: some View {
-        HStack {
+        HStack(spacing: 12) {
             Spacer()
-            Button("取消") {
-                dismiss()
+
+            Button(action: { dismiss() }) {
+                Text("取消")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(minWidth: 80)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                    )
             }
+            .buttonStyle(PlainButtonStyle())
             .keyboardShortcut(.escape)
 
-            Button(isEditing ? "保存" : "添加") {
-                saveCategory()
+            Button(action: { saveCategory() }) {
+                Text(isEditing ? "保存" : "创建")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(minWidth: 80)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(name.isEmpty ? Color.gray : Color.accentColor)
+                    .cornerRadius(8)
+                    .shadow(color: name.isEmpty ? Color.clear : Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
             }
+            .buttonStyle(PlainButtonStyle())
             .keyboardShortcut(.return)
             .disabled(name.isEmpty)
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .background(Color(NSColor.windowBackgroundColor))
     }
 
     // 保存分组

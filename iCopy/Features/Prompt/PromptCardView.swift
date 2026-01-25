@@ -9,44 +9,48 @@ struct PromptCardView: View {
 
     @State private var showingDeleteAlert = false
     @State private var isCopied = false
+    @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             // 标题栏
-            HStack {
+            HStack(spacing: 10) {
                 // 收藏图标
                 Button(action: onToggleFavorite) {
                     Image(systemName: prompt.isFavorite ? "star.fill" : "star")
-                        .foregroundColor(prompt.isFavorite ? .yellow : .gray)
+                        .font(.system(size: 16))
+                        .foregroundColor(prompt.isFavorite ? .yellow : .secondary)
+                        .symbolRenderingMode(.hierarchical)
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 // 标题
                 Text(prompt.title ?? "未命名")
-                    .font(.headline)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
                     .lineLimit(1)
 
                 Spacer()
 
                 // 分组标签
                 if let category = prompt.category {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 5) {
                         Image(systemName: category.icon ?? "folder")
-                            .font(.caption2)
+                            .font(.system(size: 10))
                         Text(category.name ?? "未命名")
+                            .font(.system(size: 11, weight: .medium))
                     }
-                    .font(.caption)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(colorFromString(category.color ?? "blue").opacity(0.2))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(colorFromString(category.color ?? "blue").opacity(0.15))
                     .foregroundColor(colorFromString(category.color ?? "blue"))
-                    .cornerRadius(4)
+                    .cornerRadius(6)
                 }
             }
 
             // 内容预览
             Text(prompt.content ?? "")
-                .font(.body)
+                .font(.system(size: 14))
                 .foregroundColor(.secondary)
                 .lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -54,52 +58,73 @@ struct PromptCardView: View {
             Divider()
 
             // 底部操作栏
-            HStack {
+            HStack(spacing: 12) {
                 // 时间信息
-                Text(timeAgoString(from: prompt.updatedAt ?? Date()))
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 10))
+                    Text(timeAgoString(from: prompt.updatedAt ?? Date()))
+                        .font(.system(size: 11))
+                }
+                .foregroundColor(.secondary)
 
                 Spacer()
 
-                // 复制按钮
-                Button(action: copyToClipboard) {
-                    HStack(spacing: 4) {
-                        Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
-                        Text(isCopied ? "已复制" : "复制")
-                    }
-                    .font(.caption)
-                    .foregroundColor(isCopied ? .green : .blue)
-                }
-                .buttonStyle(PlainButtonStyle())
+                // 操作按钮（悬停时显示）
+                if isHovered {
+                    HStack(spacing: 8) {
+                        Button(action: copyToClipboard) {
+                            HStack(spacing: 4) {
+                                Image(systemName: isCopied ? "checkmark.circle.fill" : "doc.on.doc")
+                                    .font(.system(size: 12))
+                                Text(isCopied ? "已复制" : "复制")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundColor(isCopied ? .green : .accentColor)
+                        }
+                        .buttonStyle(PlainButtonStyle())
 
-                // 编辑按钮
-                Button(action: onEdit) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "pencil")
-                        Text("编辑")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                }
-                .buttonStyle(PlainButtonStyle())
+                        Button(action: onEdit) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "pencil.circle")
+                                    .font(.system(size: 12))
+                                Text("编辑")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundColor(.accentColor)
+                        }
+                        .buttonStyle(PlainButtonStyle())
 
-                // 删除按钮
-                Button(action: { showingDeleteAlert = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "trash")
-                        Text("删除")
+                        Button(action: { showingDeleteAlert = true }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "trash.circle")
+                                    .font(.system(size: 12))
+                                Text("删除")
+                                    .font(.system(size: 12, weight: .medium))
+                            }
+                            .foregroundColor(.red)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .font(.caption)
-                    .foregroundColor(.red)
+                    .transition(.scale.combined(with: .opacity))
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
-        .padding()
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(10)
-        .shadow(radius: 2)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(NSColor.controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isHovered ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.1), lineWidth: 1)
+        )
+        .shadow(color: isHovered ? Color.black.opacity(0.08) : Color.black.opacity(0.03), radius: isHovered ? 12 : 4, x: 0, y: isHovered ? 6 : 2)
+        .onHover { hovering in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isHovered = hovering
+            }
+        }
         .alert(isPresented: $showingDeleteAlert) {
             Alert(
                 title: Text("确认删除"),

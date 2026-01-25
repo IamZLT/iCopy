@@ -35,19 +35,23 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                Image(systemName: "command") 
-                // 显示命令图标
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.purple.opacity(0.15))
+                        .frame(width: 40, height: 40)
 
-                .font(.title)
-                .foregroundColor(.purple)
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.purple)
+                }
 
-                Text("快捷键设置") 
-                // 快捷键设置标题
+                Text("通用设置")
+                    .font(.system(size: 22, weight: .bold))
 
-                .font(.title3)
-                .bold()
+                Spacer()
             }
+            .padding(.horizontal, 4)
 
             RoundedRectangle(cornerRadius: 10) 
             // 设置背景为圆角矩形
