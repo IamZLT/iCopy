@@ -8,6 +8,8 @@ cursor/
 cursor-plugins/
 .vscode/
 docs/
+iCopyTests/
+iCopyUITests/
 
 ## User settings
 xcuserdata/
