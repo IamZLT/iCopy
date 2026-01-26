@@ -18,6 +18,7 @@ struct SettingsView: View {
     @FocusState private var focusedField: FocusedField?
     @State private var hasAccessibilityPermission: Bool = false
     @State private var hasNotificationPermission: Bool = false
+    @State private var showClipboardPicker: Bool = false
 
     enum FocusedField {
         case openAppShortcut, quickPasteShortcut, showClipboardShortcut, showPromptShortcut, maxHistoryCount
@@ -56,6 +57,11 @@ struct SettingsView: View {
         }
         .alert(isPresented: $showAlert) {
             Alert(title: Text("提示"), message: Text(alertMessage), dismissButton: .default(Text("确定")))
+        }
+        .onChange(of: showClipboardPicker) { newValue in
+            if newValue {
+                showClipboardPickerWindow()
+            }
         }
     }
 
@@ -123,6 +129,17 @@ struct SettingsView: View {
                 Text("卡片显示位置")
                     .font(.system(size: 13))
                     .foregroundColor(.primary)
+
+                Button(action: { showClipboardPicker = true }) {
+                    Text("效果测试")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.green.opacity(0.1))
+                        .cornerRadius(4)
+                }
+                .buttonStyle(PlainButtonStyle())
 
                 Spacer()
 
@@ -305,6 +322,17 @@ struct SettingsView: View {
                 hasNotificationPermission = settings.authorizationStatus == .authorized
             }
         }
+    }
+
+    // MARK: - 显示剪贴板选择器
+    private func showClipboardPickerWindow() {
+        showClipboardPicker = false // 重置状态
+
+        // 使用 WindowManager 显示剪贴板选择器
+        WindowManager.shared.showClipboardPicker(
+            position: pickerPosition,
+            context: PersistenceController.shared.container.viewContext
+        )
     }
 }
 

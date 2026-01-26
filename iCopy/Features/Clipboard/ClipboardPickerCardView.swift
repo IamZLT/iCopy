@@ -1,86 +1,228 @@
 import SwiftUI
+import AppKit
 
-// 剪贴板选择卡片视图
+// 剪贴板选择卡片视图（横向布局）
 struct ClipboardPickerCardView: View {
     let item: ClipboardItem
     let onSelect: () -> Void
+    let isSelected: Bool
 
     @State private var isHovered = false
 
     var body: some View {
         Button(action: onSelect) {
-            HStack(spacing: 12) {
-                // 类型图标
-                typeIcon
-                    .font(.title2)
-                    .foregroundColor(typeColor)
-                    .frame(width: 40)
-
-                // 内容区域
-                VStack(alignment: .leading, spacing: 4) {
-                    if let title = item.title, !title.isEmpty {
-                        Text(title)
-                            .font(.headline)
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                    }
-
-                    if let content = item.content, !content.isEmpty {
-                        Text(content)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Spacer()
-
-                // 时间信息
-                Text(timeAgoString(from: item.timestamp ?? Date()))
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            .padding()
-            .background(isHovered ? Color.blue.opacity(0.1) : Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isHovered ? Color.blue : Color.clear, lineWidth: 2)
-            )
+            cardContent
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in
             isHovered = hovering
+        }
+        .frame(width: 180, height: 280)
+        .scaleEffect(isSelected ? 1.08 : 1.0, anchor: .bottom)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+
+    // 卡片内容
+    private var cardContent: some View {
+        VStack(spacing: 12) {
+            thumbnailSection
+            infoSection
+        }
+        .padding(12)
+        .background(cardBackground)
+        .overlay(cardBorder)
+        .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: 2)
+    }
+
+    // 缩略图区域
+    private var thumbnailSection: some View {
+        thumbnailView
+            .frame(width: 156, height: 160)
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .cornerRadius(8)
+    }
+
+    // 信息区域
+    private var infoSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            typeLabel
+            contentPreview
+            timeLabel
+        }
+        .frame(width: 156)
+        .padding(.horizontal, 8)
+    }
+
+    // 类型标签
+    private var typeLabel: some View {
+        HStack(spacing: 4) {
+            typeIcon.font(.system(size: 10))
+            Text(typeTitle).font(.system(size: 11, weight: .medium))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(typeColor)
+        .cornerRadius(4)
+    }
+
+    // 内容预览
+    private var contentPreview: some View {
+        Group {
+            if let content = item.content, !content.isEmpty {
+                Text(content)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    // 时间标签
+    private var timeLabel: some View {
+        Text(timeAgoString(from: item.timestamp ?? Date()))
+            .font(.system(size: 10))
+            .foregroundColor(.secondary)
+    }
+
+    // 卡片背景
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color(NSColor.controlBackgroundColor))
+    }
+
+    // 卡片边框
+    private var cardBorder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(borderColor, lineWidth: borderWidth)
+    }
+
+    private var borderColor: Color {
+        isSelected ? Color.accentColor : (isHovered ? Color.gray.opacity(0.3) : Color.clear)
+    }
+
+    private var borderWidth: CGFloat {
+        isSelected ? 3 : 1
+    }
+
+    private var shadowColor: Color {
+        isSelected ? Color.accentColor.opacity(0.3) : Color.black.opacity(0.1)
+    }
+
+    private var shadowRadius: CGFloat {
+        isSelected ? 6 : 4
+    }
+
+    // 缩略图视图
+    private var thumbnailView: some View {
+        Group {
+            if let type = ClipboardType(rawValue: item.contentType ?? "") {
+                switch type {
+                case .text:
+                    textThumbnail()
+                case .image:
+                    if let path = item.content {
+                        imageThumbnail(path: path)
+                    }
+                case .media:
+                    placeholderThumbnail(icon: "play.circle", color: .purple)
+                case .file, .folder:
+                    if let path = item.content {
+                        fileThumbnail(path: path)
+                    }
+                case .other:
+                    placeholderThumbnail(icon: "doc", color: .gray)
+                }
+            }
+        }
+    }
+
+    // 文本缩略图
+    private func textThumbnail() -> some View {
+        ZStack {
+            if let content = item.content {
+                Text(content)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .lineLimit(12)
+                    .padding(8)
+                    .frame(width: 156, height: 160)
+            }
+        }
+    }
+
+    // 图片缩略图
+    private func imageThumbnail(path: String) -> some View {
+        Group {
+            if let image = NSImage(contentsOfFile: path) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 156, height: 160)
+                    .clipped()
+            } else {
+                placeholderThumbnail(icon: "photo", color: .green)
+            }
+        }
+    }
+
+    // 文件缩略图
+    private func fileThumbnail(path: String) -> some View {
+        let isFolder = (try? FileManager.default.attributesOfItem(atPath: path)[.type] as? FileAttributeType) == .typeDirectory
+        return placeholderThumbnail(icon: isFolder ? "folder" : "doc", color: isFolder ? .blue : .orange)
+    }
+
+    // 占位符缩略图
+    private func placeholderThumbnail(icon: String, color: Color) -> some View {
+        ZStack {
+            color.opacity(0.15)
+            Image(systemName: icon)
+                .font(.system(size: 48))
+                .foregroundColor(color)
         }
     }
 
     // 类型图标
     private var typeIcon: some View {
         Group {
-            switch item.contentType {
-            case "TEXT":
-                Image(systemName: "doc.text")
-            case "IMAGE":
-                Image(systemName: "photo")
-            case "FILE":
-                Image(systemName: "doc")
-            case "FOLDER":
-                Image(systemName: "folder")
-            default:
-                Image(systemName: "doc.on.clipboard")
+            if let type = ClipboardType(rawValue: item.contentType ?? "") {
+                switch type {
+                case .text: Image(systemName: "text.quote")
+                case .image: Image(systemName: "photo")
+                case .file: Image(systemName: "doc")
+                case .folder: Image(systemName: "folder")
+                case .media: Image(systemName: "play.circle")
+                case .other: Image(systemName: "doc")
+                }
             }
+        }
+    }
+
+    // 类型标题
+    private var typeTitle: String {
+        guard let type = ClipboardType(rawValue: item.contentType ?? "") else { return "其他" }
+        switch type {
+        case .text: return "文本"
+        case .image: return "图片"
+        case .file: return "文件"
+        case .folder: return "文件夹"
+        case .media: return "媒体"
+        case .other: return "其他"
         }
     }
 
     // 类型颜色
     private var typeColor: Color {
-        switch item.contentType {
-        case "TEXT": return .blue
-        case "IMAGE": return .green
-        case "FILE": return .orange
-        case "FOLDER": return .purple
-        default: return .gray
+        guard let type = ClipboardType(rawValue: item.contentType ?? "") else { return .gray }
+        switch type {
+        case .text: return Color(red: 0.25, green: 0.47, blue: 0.85)
+        case .image: return Color(red: 0.36, green: 0.78, blue: 0.64)
+        case .file: return Color(red: 0.95, green: 0.76, blue: 0.29)
+        case .folder: return Color(red: 0.5, green: 0.5, blue: 0.9)
+        case .media: return Color(red: 0.76, green: 0.34, blue: 0.78)
+        case .other: return Color(red: 0.6, green: 0.6, blue: 0.6)
         }
     }
 
