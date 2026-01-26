@@ -230,9 +230,15 @@ struct ClipboardPickerView: View {
             return nil
         }
 
-        // 如果搜索框获得焦点，只处理 ESC 键
+        // ESC 键始终关闭面板
+        if event.keyCode == 53 { // ESC键
+            isPresented = false
+            return nil
+        }
+
+        // 如果搜索框获得焦点，回车键取消焦点
         if isSearchFocused {
-            if event.keyCode == 53 { // ESC键
+            if event.keyCode == 36 { // 回车键
                 isSearchFocused = false
                 return nil
             }
@@ -240,11 +246,6 @@ struct ClipboardPickerView: View {
         }
 
         guard !filteredItems.isEmpty else {
-            // 即使没有项目，也要处理 ESC 键
-            if event.keyCode == 53 {
-                isPresented = false
-                return nil
-            }
             return event
         }
 
@@ -271,9 +272,6 @@ struct ClipboardPickerView: View {
                 onSelect(selectedItem)
                 isPresented = false
             }
-            return nil
-        case 53: // ESC键
-            isPresented = false
             return nil
         default:
             return event
