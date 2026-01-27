@@ -6,20 +6,54 @@ struct ClipboardPickerCardView: View {
     let item: ClipboardItem
     let onSelect: () -> Void
     let isSelected: Bool
+    var position: String = "bottom"
 
     @State private var isHovered = false
 
     var body: some View {
         Button(action: onSelect) {
             cardContent
+                .scaleEffect(isSelected ? 1.08 : 1.0, anchor: scaleAnchor)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
         .onHover { hovering in
             isHovered = hovering
         }
-        .frame(width: 180, height: 280)
-        .scaleEffect(isSelected ? 1.08 : 1.0, anchor: .bottom)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+
+    // 根据位置确定放大锚点
+    private var scaleAnchor: UnitPoint {
+        switch position {
+        case "top":
+            return .top
+        case "left":
+            return .leading
+        case "right":
+            return .trailing
+        default: // bottom
+            return .bottom
+        }
+    }
+
+    // 根据位置确定卡片尺寸
+    private var cardSize: CGSize {
+        switch position {
+        case "left", "right":
+            return CGSize(width: 220, height: 200) // 左右位置：更宽更矮
+        default:
+            return CGSize(width: 180, height: 280) // 顶部/底部：原始尺寸
+        }
+    }
+
+    // 根据位置确定缩略图尺寸
+    private var thumbnailSize: CGSize {
+        switch position {
+        case "left", "right":
+            return CGSize(width: 196, height: 120) // 左右位置：更宽更矮
+        default:
+            return CGSize(width: 156, height: 160) // 顶部/底部：原始尺寸
+        }
     }
 
     // 卡片内容
@@ -37,7 +71,7 @@ struct ClipboardPickerCardView: View {
     // 缩略图区域
     private var thumbnailSection: some View {
         thumbnailView
-            .frame(width: 156, height: 160)
+            .frame(width: thumbnailSize.width, height: thumbnailSize.height)
             .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
             .cornerRadius(8)
     }
@@ -49,7 +83,7 @@ struct ClipboardPickerCardView: View {
             contentPreview
             timeLabel
         }
-        .frame(width: 156)
+        .frame(width: thumbnailSize.width)
         .padding(.horizontal, 8)
     }
 

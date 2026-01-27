@@ -170,11 +170,15 @@ struct ClipboardPickerView: View {
 
     // 侧边栏（分组和快捷键说明）
     private var sideBar: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 0) {
             // 分类筛选栏（纵向）
             verticalFilterButtons
 
+            Spacer()
+                .frame(height: 40)
+
             Divider()
+                .padding(.vertical, 8)
 
             // 快捷键说明（纵向）
             verticalShortcutHints
@@ -343,7 +347,8 @@ struct ClipboardPickerView: View {
                                 onSelect(item)
                                 closePanel()
                             },
-                            isSelected: index == selectedIndex
+                            isSelected: index == selectedIndex,
+                            position: pickerPosition
                         )
                         .id(index)
                         .opacity(isAnimating ? 1.0 : 0.0)
@@ -356,7 +361,8 @@ struct ClipboardPickerView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
             }
             .onChange(of: selectedIndex) { newIndex in
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -368,9 +374,11 @@ struct ClipboardPickerView: View {
 
     // 纵向卡片列表
     private var verticalCardList: some View {
-        ScrollViewReader { proxy in
+        let alignment: HorizontalAlignment = pickerPosition == "left" ? .leading : .trailing
+
+        return ScrollViewReader { proxy in
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .center, spacing: 16) {
+                VStack(alignment: alignment, spacing: 24) {
                     ForEach(Array(filteredItems.enumerated()), id: \.element.timestamp) { index, item in
                         ClipboardPickerCardView(
                             item: item,
@@ -378,7 +386,8 @@ struct ClipboardPickerView: View {
                                 onSelect(item)
                                 closePanel()
                             },
-                            isSelected: index == selectedIndex
+                            isSelected: index == selectedIndex,
+                            position: pickerPosition
                         )
                         .id(index)
                         .opacity(isAnimating ? 1.0 : 0.0)
@@ -390,7 +399,7 @@ struct ClipboardPickerView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 24)
                 .padding(.vertical, 16)
             }
             .onChange(of: selectedIndex) { newIndex in
