@@ -15,6 +15,7 @@ struct ClipboardPickerView: View {
     @State private var isAnimating: Bool = false
     @State private var eventMonitor: Any?
     @FocusState private var isSearchFocused: Bool
+    @State private var shouldPreventAutoFocus: Bool = true
     @Binding var isPresented: Bool
     let onSelect: (ClipboardItem) -> Void
 
@@ -48,8 +49,15 @@ struct ClipboardPickerView: View {
         .opacity(isAnimating ? 1.0 : 0.0)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isAnimating)
         .onAppear {
-            // 确保焦点不在搜索框上
-            isSearchFocused = false
+            // 延迟确保焦点不在搜索框上
+            DispatchQueue.main.async {
+                isSearchFocused = false
+            }
+
+            // 延迟启用搜索框交互，防止自动聚焦
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                shouldPreventAutoFocus = false
+            }
 
             // 启动动画
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
@@ -100,6 +108,7 @@ struct ClipboardPickerView: View {
                 .textFieldStyle(PlainTextFieldStyle())
                 .font(.system(size: 14))
                 .focused($isSearchFocused)
+                .allowsHitTesting(!shouldPreventAutoFocus)
 
             if !searchText.isEmpty {
                 Button(action: { searchText = "" }) {
@@ -226,7 +235,10 @@ struct ClipboardPickerView: View {
     private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
         // Cmd+/ 聚焦搜索框（避免与系统 Cmd+F 冲突）
         if event.modifierFlags.contains(.command) && event.keyCode == 44 { // / 键
-            isSearchFocused = true
+            shouldPreventAutoFocus = false
+            DispatchQueue.main.async {
+                isSearchFocused = true
+            }
             return nil
         }
 
