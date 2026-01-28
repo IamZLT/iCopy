@@ -137,22 +137,19 @@ struct PromptPickerCardView: View {
         ZStack {
             // 背景渐变
             LinearGradient(
-                gradient: Gradient(colors: [categoryColor.opacity(0.3), categoryColor.opacity(0.1)]),
+                gradient: Gradient(colors: [categoryColor.opacity(0.1), categoryColor.opacity(0.05)]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
 
-            // 中心图标
-            VStack(spacing: 8) {
-                Image(systemName: categoryIcon)
-                    .font(.system(size: 40))
-                    .foregroundColor(categoryColor)
-
-                if let category = prompt.category {
-                    Text(category.name ?? "")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(categoryColor)
-                }
+            // 显示提示词内容文本
+            if let content = prompt.content {
+                Text(content)
+                    .font(.system(size: 10))
+                    .foregroundColor(.secondary)
+                    .lineLimit(12)
+                    .padding(8)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
     }
