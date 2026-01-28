@@ -552,10 +552,10 @@ struct ClipboardPickerView: View {
 
         switch type {
         case .text:
-            // 文本类型创建临时文件预览
+            // 文本类型创建临时文件预览（使用固定文件名）
             if let content = item.content {
                 let tempDir = FileManager.default.temporaryDirectory
-                let fileURL = tempDir.appendingPathComponent("clipboard_preview_\(UUID().uuidString).txt")
+                let fileURL = tempDir.appendingPathComponent("iCopy_clipboard_preview.txt")
 
                 do {
                     try content.write(to: fileURL, atomically: true, encoding: .utf8)

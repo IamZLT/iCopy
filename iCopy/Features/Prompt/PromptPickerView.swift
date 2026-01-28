@@ -641,11 +641,10 @@ struct PromptPickerView: View {
 
     // MARK: - Quick Look 预览
     private func showQuickLook(for prompt: PromptItem) {
-        // 创建临时文件预览提示词内容
+        // 创建临时文件预览提示词内容（使用固定文件名）
         if let content = prompt.content {
             let tempDir = FileManager.default.temporaryDirectory
-            let fileName = (prompt.title ?? "prompt") + "_\(UUID().uuidString).txt"
-            let fileURL = tempDir.appendingPathComponent(fileName)
+            let fileURL = tempDir.appendingPathComponent("iCopy_prompt_preview.txt")
 
             do {
                 try content.write(to: fileURL, atomically: true, encoding: .utf8)
