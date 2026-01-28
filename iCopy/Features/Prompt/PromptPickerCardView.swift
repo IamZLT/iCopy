@@ -39,72 +39,51 @@ struct PromptPickerCardView: View {
     private var cardSize: CGSize {
         switch position {
         case "left", "right":
-            return CGSize(width: 220, height: 200)
+            return CGSize(width: 220, height: 200) // 左右位置：更宽更矮
         default:
-            return CGSize(width: 180, height: 280)
+            return CGSize(width: 180, height: 280) // 顶部/底部：原始尺寸
+        }
+    }
+
+    // 根据位置确定缩略图尺寸
+    private var thumbnailSize: CGSize {
+        switch position {
+        case "left", "right":
+            return CGSize(width: 196, height: 120) // 左右位置：更宽更矮
+        default:
+            return CGSize(width: 156, height: 160) // 顶部/底部：原始尺寸
         }
     }
 
     // 卡片内容
     private var cardContent: some View {
         VStack(spacing: 12) {
-            iconSection
+            thumbnailSection
             infoSection
         }
         .padding(12)
-        .frame(width: cardSize.width, height: cardSize.height)
         .background(cardBackground)
         .overlay(cardBorder)
         .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: 2)
     }
 
-    // 图标区域
-    private var iconSection: some View {
-        ZStack {
-            Circle()
-                .fill(categoryColor.opacity(0.15))
-                .frame(width: 80, height: 80)
-
-            Image(systemName: categoryIcon)
-                .font(.system(size: 36))
-                .foregroundColor(categoryColor)
-        }
-        .frame(maxWidth: .infinity)
+    // 缩略图区域
+    private var thumbnailSection: some View {
+        thumbnailView
+            .frame(width: thumbnailSize.width, height: thumbnailSize.height)
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .cornerRadius(8)
     }
 
     // 信息区域
     private var infoSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            titleSection
-            contentPreview
+        VStack(alignment: .leading, spacing: 6) {
             categoryLabel
+            titlePreview
+            contentPreview
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // 标题区域
-    private var titleSection: some View {
-        HStack(spacing: 4) {
-            if prompt.isFavorite {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(.yellow)
-            }
-
-            Text(prompt.title ?? "未命名")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.primary)
-                .lineLimit(1)
-        }
-    }
-
-    // 内容预览
-    private var contentPreview: some View {
-        Text(prompt.content ?? "")
-            .font(.system(size: 11))
-            .foregroundColor(.secondary)
-            .lineLimit(3)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(width: thumbnailSize.width)
+        .padding(.horizontal, 8)
     }
 
     // 分类标签
@@ -113,15 +92,67 @@ struct PromptPickerCardView: View {
             if let category = prompt.category {
                 HStack(spacing: 4) {
                     Image(systemName: category.icon ?? "folder")
-                        .font(.system(size: 9))
+                        .font(.system(size: 10))
                     Text(category.name ?? "未命名")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
                 .background(categoryColor)
                 .cornerRadius(4)
+            }
+        }
+    }
+
+    // 标题预览
+    private var titlePreview: some View {
+        HStack(spacing: 4) {
+            if prompt.isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.yellow)
+            }
+            Text(prompt.title ?? "未命名")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // 内容预览
+    private var contentPreview: some View {
+        Text(prompt.content ?? "")
+            .font(.system(size: 11))
+            .foregroundColor(.secondary)
+            .lineLimit(2)
+            .truncationMode(.tail)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // 缩略图视图
+    private var thumbnailView: some View {
+        ZStack {
+            // 背景渐变
+            LinearGradient(
+                gradient: Gradient(colors: [categoryColor.opacity(0.3), categoryColor.opacity(0.1)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            // 中心图标
+            VStack(spacing: 8) {
+                Image(systemName: categoryIcon)
+                    .font(.system(size: 40))
+                    .foregroundColor(categoryColor)
+
+                if let category = prompt.category {
+                    Text(category.name ?? "")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(categoryColor)
+                }
             }
         }
     }

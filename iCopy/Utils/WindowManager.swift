@@ -87,13 +87,22 @@ class WindowManager {
         // 保存窗口引用
         windows[windowId] = window
 
-        // 监听窗口失去焦点事件，自动关闭
+        // 监听窗口失去焦点事件，但排除 QuickLook 窗口
         NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification,
             object: window,
             queue: .main
-        ) { [weak self] _ in
-            self?.closeWindow(id: windowId)
+        ) { [weak self] notification in
+            // 延迟检查，确保新的 key window 已经设置
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // 如果新的 key window 是 QuickLook 窗口，不关闭面板
+                if let newKeyWindow = NSApp.keyWindow,
+                   newKeyWindow.className.contains("QLPreviewPanel") {
+                    return
+                }
+                // 否则关闭面板
+                self?.closeWindow(id: windowId)
+            }
         }
 
         // 显示窗口并确保获得焦点
@@ -139,13 +148,22 @@ class WindowManager {
         // 保存窗口引用
         windows[windowId] = window
 
-        // 监听窗口失去焦点事件，自动关闭
+        // 监听窗口失去焦点事件，但排除 QuickLook 窗口
         NotificationCenter.default.addObserver(
             forName: NSWindow.didResignKeyNotification,
             object: window,
             queue: .main
-        ) { [weak self] _ in
-            self?.closeWindow(id: windowId)
+        ) { [weak self] notification in
+            // 延迟检查，确保新的 key window 已经设置
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                // 如果新的 key window 是 QuickLook 窗口，不关闭面板
+                if let newKeyWindow = NSApp.keyWindow,
+                   newKeyWindow.className.contains("QLPreviewPanel") {
+                    return
+                }
+                // 否则关闭面板
+                self?.closeWindow(id: windowId)
+            }
         }
 
         // 显示窗口并确保获得焦点
