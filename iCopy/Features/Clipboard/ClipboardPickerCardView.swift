@@ -13,10 +13,10 @@ struct ClipboardPickerCardView: View {
     var body: some View {
         Button(action: onSelect) {
             cardContent
-                .scaleEffect(isSelected ? 1.08 : 1.0, anchor: scaleAnchor)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isSelected ? 1.08 : 1.0, anchor: scaleAnchor)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         .onHover { hovering in
             isHovered = hovering
         }

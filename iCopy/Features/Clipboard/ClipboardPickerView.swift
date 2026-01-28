@@ -42,8 +42,8 @@ struct ClipboardPickerView: View {
             }
         }
         .background(Color.clear)
-        .offset(x: getAnimationOffset().x, y: getAnimationOffset().y)
         .opacity(isAnimating && !isClosing ? 1.0 : 0.0)
+        .offset(x: getLayoutOffset().x, y: getLayoutOffset().y)
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isAnimating)
         .animation(.easeOut(duration: 0.2), value: isClosing)
         .onAppear {
@@ -351,13 +351,14 @@ struct ClipboardPickerView: View {
                             position: pickerPosition
                         )
                         .id(index)
-                        .opacity(isAnimating ? 1.0 : 0.0)
-                        .offset(y: isAnimating ? 0 : 20)
+                        .opacity(isAnimating && !isClosing ? 1.0 : 0.0)
+                        .offset(y: getCardOffset(index: index))
                         .animation(
                             .spring(response: 0.4, dampingFraction: 0.8)
                                 .delay(Double(index) * 0.05),
                             value: isAnimating
                         )
+                        .animation(.easeOut(duration: 0.2), value: isClosing)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -390,13 +391,14 @@ struct ClipboardPickerView: View {
                             position: pickerPosition
                         )
                         .id(index)
-                        .opacity(isAnimating ? 1.0 : 0.0)
-                        .offset(x: isAnimating ? 0 : 20)
+                        .opacity(isAnimating && !isClosing ? 1.0 : 0.0)
+                        .offset(x: getCardOffset(index: index))
                         .animation(
                             .spring(response: 0.4, dampingFraction: 0.8)
                                 .delay(Double(index) * 0.05),
                             value: isAnimating
                         )
+                        .animation(.easeOut(duration: 0.2), value: isClosing)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -430,25 +432,25 @@ struct ClipboardPickerView: View {
         }
     }
 
-    // MARK: - 动画偏移量
-    private func getAnimationOffset() -> CGPoint {
+    // MARK: - 整体布局偏移量
+    private func getLayoutOffset() -> CGPoint {
         // 退出动画
         if isClosing {
             switch pickerPosition {
             case "top":
-                return CGPoint(x: 0, y: -100)
+                return CGPoint(x: 0, y: -50)
             case "bottom":
-                return CGPoint(x: 0, y: 100)
+                return CGPoint(x: 0, y: 50)
             case "left":
-                return CGPoint(x: -100, y: 0)
+                return CGPoint(x: -50, y: 0)
             case "right":
-                return CGPoint(x: 100, y: 0)
+                return CGPoint(x: 50, y: 0)
             default:
-                return CGPoint(x: 0, y: 100)
+                return CGPoint(x: 0, y: 50)
             }
         }
 
-        // 进入动画
+        // 进入动画完成
         if isAnimating {
             return CGPoint(x: 0, y: 0)
         }
@@ -456,15 +458,53 @@ struct ClipboardPickerView: View {
         // 初始状态偏移
         switch pickerPosition {
         case "top":
-            return CGPoint(x: 0, y: -100)
+            return CGPoint(x: 0, y: -50)
         case "bottom":
-            return CGPoint(x: 0, y: 100)
+            return CGPoint(x: 0, y: 50)
         case "left":
-            return CGPoint(x: -100, y: 0)
+            return CGPoint(x: -50, y: 0)
         case "right":
-            return CGPoint(x: 100, y: 0)
+            return CGPoint(x: 50, y: 0)
         default:
-            return CGPoint(x: 0, y: 100)
+            return CGPoint(x: 0, y: 50)
+        }
+    }
+
+    // MARK: - 卡片偏移量
+    private func getCardOffset(index: Int) -> CGFloat {
+        // 退出动画
+        if isClosing {
+            switch pickerPosition {
+            case "top":
+                return -30
+            case "bottom":
+                return 30
+            case "left":
+                return -30
+            case "right":
+                return 30
+            default:
+                return 30
+            }
+        }
+
+        // 进入动画完成
+        if isAnimating {
+            return 0
+        }
+
+        // 初始状态偏移
+        switch pickerPosition {
+        case "top":
+            return -20
+        case "bottom":
+            return 20
+        case "left":
+            return -20
+        case "right":
+            return 20
+        default:
+            return 20
         }
     }
 

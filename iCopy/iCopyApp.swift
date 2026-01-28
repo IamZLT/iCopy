@@ -44,10 +44,14 @@ struct iCopyApp: App {
 // AppDelegate 用于控制窗口行为
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var configuredWindows = Set<Int>() // 记录已配置的窗口
+    private let hotkeyManager = HotkeyManager.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // 设置所有窗口为固定大小
         setupFixedWindows()
+
+        // 注册全局快捷键
+        setupGlobalHotkeys()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -101,5 +105,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 只在首次配置时居中
         window.center()
+    }
+
+    // MARK: - 设置全局快捷键
+    private func setupGlobalHotkeys() {
+        // 从 UserDefaults 读取快捷键配置
+        let showClipboardShortcut = UserDefaults.standard.string(forKey: "showClipboardShortcut") ?? "Cmd + Shift + C"
+
+        // 解析并注册显示剪贴板快捷键
+        if let (keyCode, modifiers) = hotkeyManager.parseShortcut(showClipboardShortcut) {
+            hotkeyManager.registerHotkey(id: 1, keyCode: keyCode, modifiers: modifiers) { [weak self] in
+                // 每次按快捷键时都读取最新的位置设置
+                let currentPosition = UserDefaults.standard.string(forKey: "pickerPosition") ?? "bottom"
+                self?.showClipboardPicker(position: currentPosition)
+            }
+            print("📋 已注册显示剪贴板快捷键: \(showClipboardShortcut)")
+        } else {
+            print("⚠️ 无法解析快捷键: \(showClipboardShortcut)")
+        }
+    }
+
+    // MARK: - 显示剪贴板选择器
+    private func showClipboardPicker(position: String) {
+        DispatchQueue.main.async {
+            let context = PersistenceController.shared.container.viewContext
+            WindowManager.shared.showClipboardPicker(position: position, context: context)
+        }
     }
 }
