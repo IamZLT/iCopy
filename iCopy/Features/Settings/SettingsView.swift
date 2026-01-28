@@ -342,7 +342,6 @@ struct ShortcutEditRow: View {
     let iconColor: Color
     let title: String
     @Binding var shortcut: String
-    @State private var isEditing: Bool = false
 
     var body: some View {
         HStack {
@@ -357,25 +356,7 @@ struct ShortcutEditRow: View {
 
             Spacer()
 
-            if isEditing {
-                TextField("", text: $shortcut)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 150)
-                    .onSubmit {
-                        isEditing = false
-                    }
-            } else {
-                Button(action: { isEditing = true }) {
-                    Text(shortcut)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                        .cornerRadius(4)
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
+            ShortcutRecorderView(shortcut: $shortcut)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

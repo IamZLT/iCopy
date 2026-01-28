@@ -82,6 +82,12 @@ class HotkeyManager {
         print("🗑️ 已注销所有快捷键")
     }
 
+    // 注销指定 ID 的快捷键
+    func unregisterHotkey(id: UInt32) {
+        eventHandlers.removeValue(forKey: id)
+        print("🗑️ 已注销快捷键 ID: \(id)")
+    }
+
     // 解析快捷键字符串（例如 "Cmd + Shift + C"）
     func parseShortcut(_ shortcut: String) -> (keyCode: UInt32, modifiers: UInt32)? {
         let components = shortcut.split(separator: "+").map { $0.trimmingCharacters(in: .whitespaces) }

@@ -16,6 +16,7 @@ struct ClipboardPickerView: View {
     @State private var isAnimating: Bool = false
     @State private var isClosing: Bool = false
     @State private var eventMonitor: Any?
+    @State private var mouseMonitor: Any?
     @FocusState private var isSearchFocused: Bool
     @State private var shouldPreventAutoFocus: Bool = true
     @Binding var isPresented: Bool
@@ -68,12 +69,21 @@ struct ClipboardPickerView: View {
             eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
                 return self.handleKeyEvent(event)
             }
+
+            // 添加鼠标点击事件监听（点击外部区域关闭）
+            mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [self] event in
+                self.handleMouseClick(event)
+            }
         }
         .onDisappear {
             // 移除事件监听
             if let monitor = eventMonitor {
                 NSEvent.removeMonitor(monitor)
                 eventMonitor = nil
+            }
+            if let monitor = mouseMonitor {
+                NSEvent.removeMonitor(monitor)
+                mouseMonitor = nil
             }
         }
         .onChange(of: searchText) { _ in
@@ -517,6 +527,22 @@ struct ClipboardPickerView: View {
         // 动画完成后真正关闭
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             isPresented = false
+        }
+    }
+
+    // MARK: - 处理鼠标点击（点击外部区域关闭）
+    private func handleMouseClick(_ event: NSEvent) {
+        // 获取当前窗口
+        guard let window = NSApp.windows.first(where: { $0.title == "" && $0.level == .floating }) else {
+            return
+        }
+
+        // 获取鼠标在屏幕上的位置
+        let mouseLocation = NSEvent.mouseLocation
+
+        // 检查点击是否在窗口内
+        if !window.frame.contains(mouseLocation) {
+            closePanel()
         }
     }
 

@@ -1,65 +1,170 @@
 import SwiftUI
 
-// 提示词选择卡片视图
+// 提示词选择卡片视图（横向布局）
 struct PromptPickerCardView: View {
     let prompt: PromptItem
     let onSelect: () -> Void
+    let isSelected: Bool
+    var position: String = "bottom"
 
     @State private var isHovered = false
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 10) {
-                // 标题栏
-                HStack {
-                    if prompt.isFavorite {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
-                            .font(.caption)
-                    }
-
-                    Text(prompt.title ?? "未命名")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-
-                    Spacer()
-
-                    // 分组标签
-                    if let category = prompt.category {
-                        HStack(spacing: 4) {
-                            Image(systemName: category.icon ?? "folder")
-                                .font(.caption2)
-                            Text(category.name ?? "未命名")
-                        }
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(colorFromString(category.color ?? "blue").opacity(0.2))
-                        .foregroundColor(colorFromString(category.color ?? "blue"))
-                        .cornerRadius(4)
-                    }
-                }
-
-                // 内容预览
-                Text(prompt.content ?? "")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding()
-            .background(isHovered ? Color.blue.opacity(0.1) : Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isHovered ? Color.blue : Color.clear, lineWidth: 2)
-            )
+            cardContent
         }
         .buttonStyle(PlainButtonStyle())
+        .scaleEffect(isSelected ? 1.08 : 1.0, anchor: scaleAnchor)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         .onHover { hovering in
             isHovered = hovering
         }
+    }
+
+    // 根据位置确定放大锚点
+    private var scaleAnchor: UnitPoint {
+        switch position {
+        case "top":
+            return .top
+        case "left":
+            return .leading
+        case "right":
+            return .trailing
+        default: // bottom
+            return .bottom
+        }
+    }
+
+    // 根据位置确定卡片尺寸
+    private var cardSize: CGSize {
+        switch position {
+        case "left", "right":
+            return CGSize(width: 220, height: 200)
+        default:
+            return CGSize(width: 180, height: 280)
+        }
+    }
+
+    // 卡片内容
+    private var cardContent: some View {
+        VStack(spacing: 12) {
+            iconSection
+            infoSection
+        }
+        .padding(12)
+        .frame(width: cardSize.width, height: cardSize.height)
+        .background(cardBackground)
+        .overlay(cardBorder)
+        .shadow(color: shadowColor, radius: shadowRadius, x: 0, y: 2)
+    }
+
+    // 图标区域
+    private var iconSection: some View {
+        ZStack {
+            Circle()
+                .fill(categoryColor.opacity(0.15))
+                .frame(width: 80, height: 80)
+
+            Image(systemName: categoryIcon)
+                .font(.system(size: 36))
+                .foregroundColor(categoryColor)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // 信息区域
+    private var infoSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            titleSection
+            contentPreview
+            categoryLabel
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // 标题区域
+    private var titleSection: some View {
+        HStack(spacing: 4) {
+            if prompt.isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.yellow)
+            }
+
+            Text(prompt.title ?? "未命名")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+        }
+    }
+
+    // 内容预览
+    private var contentPreview: some View {
+        Text(prompt.content ?? "")
+            .font(.system(size: 11))
+            .foregroundColor(.secondary)
+            .lineLimit(3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // 分类标签
+    private var categoryLabel: some View {
+        Group {
+            if let category = prompt.category {
+                HStack(spacing: 4) {
+                    Image(systemName: category.icon ?? "folder")
+                        .font(.system(size: 9))
+                    Text(category.name ?? "未命名")
+                        .font(.system(size: 10, weight: .medium))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(categoryColor)
+                .cornerRadius(4)
+            }
+        }
+    }
+
+    // 卡片背景
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color(NSColor.controlBackgroundColor))
+    }
+
+    // 卡片边框
+    private var cardBorder: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(borderColor, lineWidth: borderWidth)
+    }
+
+    private var borderColor: Color {
+        isSelected ? Color.accentColor : (isHovered ? Color.gray.opacity(0.3) : Color.clear)
+    }
+
+    private var borderWidth: CGFloat {
+        isSelected ? 3 : 1
+    }
+
+    private var shadowColor: Color {
+        isSelected ? Color.accentColor.opacity(0.3) : Color.black.opacity(0.1)
+    }
+
+    private var shadowRadius: CGFloat {
+        isSelected ? 6 : 4
+    }
+
+    // 分类颜色
+    private var categoryColor: Color {
+        if let category = prompt.category {
+            return colorFromString(category.color ?? "blue")
+        }
+        return .blue
+    }
+
+    // 分类图标
+    private var categoryIcon: String {
+        prompt.category?.icon ?? "text.bubble"
     }
 
     // 颜色转换

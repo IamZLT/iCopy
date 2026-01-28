@@ -52,6 +52,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // 注册全局快捷键
         setupGlobalHotkeys()
+
+        // 监听快捷键设置变化
+        setupHotkeyObservers()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -111,6 +114,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupGlobalHotkeys() {
         // 从 UserDefaults 读取快捷键配置
         let showClipboardShortcut = UserDefaults.standard.string(forKey: "showClipboardShortcut") ?? "Cmd + Shift + C"
+        let showPromptShortcut = UserDefaults.standard.string(forKey: "showPromptShortcut") ?? "Cmd + Shift + T"
 
         // 解析并注册显示剪贴板快捷键
         if let (keyCode, modifiers) = hotkeyManager.parseShortcut(showClipboardShortcut) {
@@ -123,6 +127,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             print("⚠️ 无法解析快捷键: \(showClipboardShortcut)")
         }
+
+        // 解析并注册显示提示词快捷键
+        if let (keyCode, modifiers) = hotkeyManager.parseShortcut(showPromptShortcut) {
+            hotkeyManager.registerHotkey(id: 2, keyCode: keyCode, modifiers: modifiers) { [weak self] in
+                // 每次按快捷键时都读取最新的位置设置
+                let currentPosition = UserDefaults.standard.string(forKey: "pickerPosition") ?? "bottom"
+                self?.showPromptPicker(position: currentPosition)
+            }
+            print("💬 已注册显示提示词快捷键: \(showPromptShortcut)")
+        } else {
+            print("⚠️ 无法解析快捷键: \(showPromptShortcut)")
+        }
     }
 
     // MARK: - 显示剪贴板选择器
@@ -131,5 +147,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let context = PersistenceController.shared.container.viewContext
             WindowManager.shared.showClipboardPicker(position: position, context: context)
         }
+    }
+
+    // MARK: - 显示提示词选择器
+    private func showPromptPicker(position: String) {
+        DispatchQueue.main.async {
+            let context = PersistenceController.shared.container.viewContext
+            WindowManager.shared.showPromptPicker(position: position, context: context)
+        }
+    }
+
+    // MARK: - 监听快捷键设置变化
+    private func setupHotkeyObservers() {
+        // 监听剪贴板快捷键变化
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleHotkeySettingsChange()
+        }
+    }
+
+    // MARK: - 处理快捷键设置变化
+    private func handleHotkeySettingsChange() {
+        // 注销所有快捷键
+        hotkeyManager.unregisterAllHotkeys()
+
+        // 重新注册快捷键
+        setupGlobalHotkeys()
+
+        print("🔄 快捷键已更新")
     }
 }

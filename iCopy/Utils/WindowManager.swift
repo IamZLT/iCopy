@@ -2,8 +2,8 @@ import SwiftUI
 import AppKit
 import CoreData
 
-// MARK: - 自定义窗口类，支持无边框窗口接收键盘事件
-class KeyableWindow: NSWindow {
+// MARK: - 自定义面板类，支持无边框面板接收键盘事件
+class KeyablePanel: NSPanel {
     override var canBecomeKey: Bool {
         return true
     }
@@ -59,9 +59,64 @@ class WindowManager {
         windows.removeValue(forKey: id)
     }
 
+    // MARK: - 显示提示词选择器
+    func showPromptPicker(position: String, context: NSManagedObjectContext) {
+        let windowId = "promptPicker"
+
+        // 关闭剪贴板选择器（互斥）
+        closeWindow(id: "clipboardPicker")
+
+        // 如果窗口已存在，先关闭
+        closeWindow(id: windowId)
+
+        // 创建提示词选择器视图
+        let pickerView = PromptPickerView(
+            isPresented: .constant(true),
+            onSelect: { prompt in
+                // 复制提示词内容到剪贴板
+                self.copyPromptToClipboard(prompt)
+                self.closeWindow(id: windowId)
+            }
+        )
+        .environment(\.managedObjectContext, context)
+
+        // 创建窗口
+        let hostingController = NSHostingController(rootView: pickerView)
+        let window = createPickerWindow(hostingController: hostingController, position: position)
+
+        // 保存窗口引用
+        windows[windowId] = window
+
+        // 监听窗口失去焦点事件，自动关闭
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            self?.closeWindow(id: windowId)
+        }
+
+        // 显示窗口并确保获得焦点
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // 在显示后再次设置位置，确保位置正确
+        DispatchQueue.main.async {
+            self.repositionWindow(window, position: position)
+        }
+
+        // 确保窗口成为主窗口并接收键盘事件
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            window.makeKey()
+        }
+    }
+
     // MARK: - 显示剪贴板选择器
     func showClipboardPicker(position: String, context: NSManagedObjectContext) {
         let windowId = "clipboardPicker"
+
+        // 关闭提示词选择器（互斥）
+        closeWindow(id: "promptPicker")
 
         // 如果窗口已存在，先关闭
         closeWindow(id: windowId)
@@ -84,6 +139,15 @@ class WindowManager {
         // 保存窗口引用
         windows[windowId] = window
 
+        // 监听窗口失去焦点事件，自动关闭
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            self?.closeWindow(id: windowId)
+        }
+
         // 显示窗口并确保获得焦点
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -101,19 +165,23 @@ class WindowManager {
 
     // MARK: - 创建选择器窗口
     private func createPickerWindow(hostingController: NSHostingController<some View>, position: String) -> NSWindow {
-        // 创建窗口
-        let window = KeyableWindow(contentViewController: hostingController)
+        // 创建面板
+        let panel = KeyablePanel(contentViewController: hostingController)
 
-        // 设置窗口样式
-        window.styleMask = [.borderless, .fullSizeContentView]
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        window.acceptsMouseMovedEvents = true
+        // 设置面板样式
+        panel.styleMask = [.borderless, .fullSizeContentView]
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.level = .floating
+        panel.acceptsMouseMovedEvents = true
+
+        // 关键设置：点击外部区域自动关闭
+        panel.hidesOnDeactivate = true
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = false
 
         // 设置窗口位置和大小
-        guard let screen = NSScreen.main else { return window }
+        guard let screen = NSScreen.main else { return panel }
         let screenFrame = screen.visibleFrame
 
         let windowFrame: NSRect
@@ -156,9 +224,9 @@ class WindowManager {
             )
         }
 
-        window.setFrame(windowFrame, display: false)
+        panel.setFrame(windowFrame, display: false)
 
-        return window
+        return panel
     }
 
     // MARK: - 重新定位窗口
@@ -227,5 +295,12 @@ class WindowManager {
         case .other:
             break
         }
+    }
+
+    // MARK: - 复制提示词到剪贴板
+    private func copyPromptToClipboard(_ prompt: PromptItem) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(prompt.content ?? "", forType: .string)
     }
 }
