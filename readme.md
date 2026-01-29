@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 <p align="center">
-  <img src="asserts/title.png?v=202601291643" alt="iCopy 标题" width="480">
+  <img src="asserts/title.png?v=202601291644" alt="iCopy 标题" width="480">
 </p>
 
 ## 📖 项目简介
