@@ -185,15 +185,9 @@ struct ClipboardPickerView: View {
             verticalFilterButtons
 
             Spacer()
-                .frame(height: 40)
 
-            Divider()
-                .padding(.vertical, 8)
-
-            // 快捷键说明（纵向）
+            // 快捷键说明（纵向）- 移到底部
             verticalShortcutHints
-
-            Spacer()
         }
         .frame(width: 70)
         .padding(.vertical, 16)
@@ -308,22 +302,24 @@ struct ClipboardPickerView: View {
         VStack(spacing: 8) {
             // "全部"按钮
             Button(action: { selectedCategory = nil }) {
-                HStack(spacing: 4) {
+                VStack(spacing: 4) {
                     Text("0")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("全部")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .bold))
+                    // 将"全部"文字垂直排列
+                    VStack(spacing: 2) {
+                        Text("全")
+                            .font(.system(size: 11, weight: .medium))
+                        Text("部")
+                            .font(.system(size: 11, weight: .medium))
+                    }
                 }
                 .foregroundColor(selectedCategory == nil ? .white : .primary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 8)
                 .background(selectedCategory == nil ? Color.accentColor : Color(NSColor.controlBackgroundColor))
                 .cornerRadius(6)
-                .fixedSize()
-                .rotationEffect(.degrees(-90))
             }
             .buttonStyle(PlainButtonStyle())
-            .frame(width: 50, height: 70)
 
             verticalCategoryButton(title: "文本", icon: "text.quote", number: "1", type: .text)
             verticalCategoryButton(title: "图片", icon: "photo", number: "2", type: .image)
@@ -713,42 +709,51 @@ struct ClipboardPickerView: View {
     // MARK: - 纵向分类按钮（用于侧边栏）
     private func verticalCategoryButton(title: String, icon: String, number: String, type: ClipboardType) -> some View {
         Button(action: { selectedCategory = type.rawValue }) {
-            HStack(spacing: 4) {
+            VStack(spacing: 4) {
                 Text(number)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 11, weight: .bold))
                 Image(systemName: icon)
-                    .font(.system(size: 10))
-                Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 14))
+                // 将标题文字垂直排列
+                VStack(spacing: 2) {
+                    ForEach(Array(title.enumerated()), id: \.offset) { _, char in
+                        Text(String(char))
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                }
             }
             .foregroundColor(selectedCategory == type.rawValue ? .white : .primary)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
             .background(selectedCategory == type.rawValue ? Color.accentColor : Color(NSColor.controlBackgroundColor))
             .cornerRadius(6)
-            .fixedSize()
-            .rotationEffect(.degrees(-90))
         }
         .buttonStyle(PlainButtonStyle())
-        .frame(width: 50, height: 80)
     }
 
     // MARK: - 纵向快捷键提示（用于侧边栏）
     private func verticalShortcutHint(key: String, description: String) -> some View {
-        HStack(spacing: 4) {
-            Text(key)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(4)
-            Text(description)
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
+        VStack(spacing: 4) {
+            // 将快捷键文字垂直排列
+            VStack(spacing: 1) {
+                ForEach(Array(key.enumerated()), id: \.offset) { _, char in
+                    Text(String(char))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(4)
+            // 将描述文字垂直排列
+            VStack(spacing: 2) {
+                ForEach(Array(description.enumerated()), id: \.offset) { _, char in
+                    Text(String(char))
+                        .font(.system(size: 9))
+                        .foregroundColor(.secondary)
+                }
+            }
         }
-        .fixedSize()
-        .rotationEffect(.degrees(-90))
-        .frame(width: 50, height: 70)
     }
 }

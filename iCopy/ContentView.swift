@@ -10,9 +10,11 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     // Logo区域
                     VStack(spacing: 8) {
-                        Image(systemName: "doc.on.doc")
-                            .font(.system(size: 36))
-                            .foregroundColor(.blue)
+                        Image("AppLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 64, height: 64)
+                            .cornerRadius(12)
                         Text("iCopy")
                             .font(.system(size: 16, weight: .bold))
                     }
