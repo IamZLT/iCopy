@@ -6,10 +6,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.5+-orange.svg)](https://swift.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-
 <p align="center">
-  <img src="asserts/AppLogo@1024.png" alt="iCopy Logo" width="120" style="vertical-align: middle; margin-right: 16px;" />
-  <span style="font-size: 40px; font-weight: 700; vertical-align: middle;">iCopy</span>
+  <img src="asserts/title.png" alt="iCopy 标题" width="480">
 </p>
 
 ## 📖 项目简介
