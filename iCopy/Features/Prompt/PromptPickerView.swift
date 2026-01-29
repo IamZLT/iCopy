@@ -238,8 +238,8 @@ struct PromptPickerView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                // 动态分类按钮
-                ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
+                // 动态分类按钮（上下位置最多显示10个）
+                ForEach(Array(categories.prefix(10).enumerated()), id: \.element.id) { index, category in
                     if let name = category.name, let icon = category.icon {
                         categoryButton(
                             title: name,
@@ -293,8 +293,8 @@ struct PromptPickerView: View {
             }
             .buttonStyle(PlainButtonStyle())
 
-            // 动态分类按钮
-            ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
+            // 动态分类按钮（左右侧边栏最多显示5个）
+            ForEach(Array(categories.prefix(5).enumerated()), id: \.element.id) { index, category in
                 if let name = category.name, let icon = category.icon {
                     verticalCategoryButton(
                         title: name,
@@ -310,7 +310,7 @@ struct PromptPickerView: View {
     // 纵向快捷键说明（用于侧边栏）
     private var verticalShortcutHints: some View {
         VStack(alignment: .center, spacing: 8) {
-            verticalShortcutHint(key: "0-9", description: "切换分组")
+            verticalShortcutHint(key: "0-5", description: "切换分组")
             verticalShortcutHint(key: "↑↓", description: "切换卡片")
             verticalShortcutHint(key: "Space", description: "预览")
             verticalShortcutHint(key: "↵", description: "选择")
