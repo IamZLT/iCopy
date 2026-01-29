@@ -6,6 +6,7 @@ struct iCopyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let persistenceController = PersistenceController.shared
     @StateObject private var permissionManager = PermissionManager.shared
+    @StateObject private var cleanupManager = ClipboardCleanupManager.shared
     @State private var showPermissionGuide = false
 
     var body: some Scene {

@@ -34,8 +34,11 @@ iCopy/
 │   │       └── SettingsView.swift  # 设置界面
 │   │
 │   ├── Utils/                      # 工具类
-│   │   ├── DiskPermissionManager.swift     # 磁盘权限管理
-│   │   ├── CustomContainerView.swift       # 自定义容器视图
+│   │   ├── ClipboardCleanupManager.swift   # 剪贴板自动清理管理
+│   │   ├── QuickLookManager.swift          # Quick Look 预览管理
+│   │   ├── WindowManager.swift             # 窗口管理
+│   │   ├── HotkeyManager.swift             # 全局快捷键管理
+│   │   ├── PermissionManager.swift         # 权限管理
 │   │   ├── KeyEventHandlerView.swift       # 键盘事件处理
 │   │   └── NoFocusRingView.swift           # 无焦点环视图
 │   │
@@ -157,8 +160,28 @@ iCopy/
 ### Utils 层
 **职责**：通用工具类和辅助功能
 
-- `DiskPermissionManager.swift`：磁盘权限管理
-- `CustomContainerView.swift`：自定义容器视图
+- `ClipboardCleanupManager.swift`：剪贴板自动清理管理
+  - 单例模式，全局管理清理任务
+  - 定时检查和执行清理（每小时）
+  - 计算和更新下次清理倒计时
+  - 使用 CoreData 批量删除优化性能
+
+- `QuickLookManager.swift`：Quick Look 预览管理
+  - 管理 macOS 原生预览窗口
+  - 支持多种文件类型预览
+
+- `WindowManager.swift`：窗口管理
+  - 管理弹窗的显示和隐藏
+  - 控制窗口位置和层级
+
+- `HotkeyManager.swift`：全局快捷键管理
+  - 注册和监听全局快捷键
+  - 快捷键解析和验证
+
+- `PermissionManager.swift`：权限管理
+  - 检查辅助功能权限
+  - 检查通知权限
+
 - `KeyEventHandlerView.swift`：键盘事件处理
 - `NoFocusRingView.swift`：无焦点环视图
 
@@ -178,6 +201,24 @@ iCopy/
 NSPasteboard → HistoryClipboardView → Core Data → ClipboardItem
                                                          ↓
                                               ClipboardPickerView
+                                                         ↓
+                                          ClipboardCleanupManager
+                                          (定时清理过期数据)
+```
+
+### 自动清理数据流
+```
+App启动 → ClipboardCleanupManager初始化
+              ↓
+         定时器启动（每小时检查）
+              ↓
+    检查autoCleanInterval设置
+              ↓
+    计算下次清理时间 → 更新倒计时显示
+              ↓
+    到达清理时间 → 批量删除过期ClipboardItem
+              ↓
+         保存清理时间 → 重新计算下次清理
 ```
 
 ### 提示词数据流
@@ -231,5 +272,5 @@ User Input → PromptEditorView → Core Data → PromptItem
 
 ---
 
-**文档版本**: v2.0.0
-**最后更新**: 2026-01-25
+**文档版本**: v2.1.0
+**最后更新**: 2026-01-29

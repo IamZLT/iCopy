@@ -50,6 +50,15 @@ struct ContentView: View {
                             MenuButton(icon: "gear", title: "通用设置")
                         }
                         .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+
+                        NavigationLink(
+                            destination: AboutView(),
+                            tag: "About",
+                            selection: $selectedView
+                        ) {
+                            MenuButton(icon: "info.circle", title: "软件说明")
+                        }
+                        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                     }
                     .listStyle(SidebarListStyle())
 
@@ -67,6 +76,8 @@ struct ContentView: View {
                 PromptManagementView()
             } else if selectedView == "Settings" {
                 SettingsView()
+            } else if selectedView == "About" {
+                AboutView()
             }
         }
         .navigationViewStyle(DoubleColumnNavigationViewStyle()) // 使用双列导航视图样式

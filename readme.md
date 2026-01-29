@@ -1,12 +1,22 @@
+
+
 # iCopy - 智能剪贴板与提示词管理工具
 
 [![macOS](https://img.shields.io/badge/macOS-11.0+-blue.svg)](https://www.apple.com/macos/)
 [![Swift](https://img.shields.io/badge/Swift-5.5+-orange.svg)](https://swift.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+
+<p align="center">
+  <img src="asserts/AppLogo@1024.png" alt="iCopy Logo" width="120" style="vertical-align: middle; margin-right: 16px;" />
+  <span style="font-size: 40px; font-weight: 700; vertical-align: middle;">iCopy</span>
+</p>
+
 ## 📖 项目简介
 
 iCopy 是一个功能强大的 macOS 应用，集成了**剪贴板历史管理**和 **AI 提示词管理**功能，帮助您更高效地使用大语言模型和管理日常复制内容。采用现代化的 SwiftUI 设计，界面简洁优雅，符合 macOS 设计规范。
+
+![iCopy 截图](asserts/app.jpg)
 
 ### ✨ 核心功能
 
@@ -18,6 +28,7 @@ iCopy 是一个功能强大的 macOS 应用，集成了**剪贴板历史管理**
 - 👁️ **Quick Look 预览**：使用 macOS 原生预览功能查看内容
 - 🎨 **缩略图显示**：所有类型内容都有直观的缩略图预览
 - ⚙️ **灵活配置**：可配置最大历史记录数量和自动清理间隔
+- ⏰ **智能清理**：自动清理过期记录，支持倒计时显示
 - ⌨️ **全局快捷键**：随时随地快速调出历史记录选择器
 
 #### 💬 提示词管理
@@ -148,6 +159,7 @@ iCopy/
 │       └── SettingsView.swift              # 通用设置界面
 │
 ├── Utils/                      # 工具类
+│   ├── ClipboardCleanupManager.swift   # 剪贴板自动清理管理
 │   ├── QuickLookManager.swift          # Quick Look 预览管理
 │   ├── WindowManager.swift             # 窗口管理
 │   ├── KeyEventHandlerView.swift       # 键盘事件处理
@@ -185,7 +197,21 @@ iCopy/
 
 ## 📝 开发进度
 
-### v1.0.2  - UI/UX 优化更新
+### v1.0.3 - 自动清理功能增强
+- ✅ **智能清理系统**：
+  - 实现 ClipboardCleanupManager 自动清理管理器
+  - 支持基于时间间隔的自动清理（0-30天）
+  - 后台定时检查，每小时自动执行清理任务
+- ✅ **倒计时显示**：
+  - 在设置页面显示下次清理的倒计时
+  - 实时更新倒计时（每分钟刷新）
+  - 智能格式化显示（X天X小时后 / X小时X分钟后）
+- ✅ **清理逻辑优化**：
+  - 使用 CoreData 批量删除提升性能
+  - 持久化上次清理时间，确保清理计划准确
+  - 支持动态调整清理间隔，立即生效
+
+### v1.0.2 - UI/UX 优化更新
 - ✅ **Quick Look 集成**：使用 macOS 原生预览功能替代自定义详情窗口
 - ✅ **剪贴板卡片优化**：
   - 重新设计布局（左侧内容，右侧缩略图）
@@ -237,4 +263,3 @@ iCopy/
 
 ---
 
-**Made with ❤️ for macOS users**

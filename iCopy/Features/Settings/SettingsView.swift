@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var hasAccessibilityPermission: Bool = false
     @State private var hasNotificationPermission: Bool = false
     @State private var showClipboardPicker: Bool = false
+    @StateObject private var cleanupManager = ClipboardCleanupManager.shared
 
     enum FocusedField {
         case openAppShortcut, quickPasteShortcut, showClipboardShortcut, showPromptShortcut, maxHistoryCount
@@ -191,28 +192,57 @@ struct SettingsView: View {
 
                 Divider().padding(.leading, 40)
 
-                HStack {
-                    Image(systemName: "clock")
-                        .font(.system(size: 14))
-                        .foregroundColor(.orange)
-                        .frame(width: 24)
+                VStack(spacing: 0) {
+                    HStack {
+                        Image(systemName: "clock")
+                            .font(.system(size: 14))
+                            .foregroundColor(.orange)
+                            .frame(width: 24)
 
-                    Text("自动清理")
-                        .font(.system(size: 13))
-                        .foregroundColor(.primary)
+                        Text("自动清理")
+                            .font(.system(size: 13))
+                            .foregroundColor(.primary)
 
-                    Spacer()
+                        Spacer()
 
-                    Text("\(Int(autoCleanInterval)) 天")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                        .frame(width: 50)
+                        Text("\(Int(autoCleanInterval)) 天")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .frame(width: 50)
 
-                    Slider(value: $autoCleanInterval, in: 0...30, step: 1)
-                        .frame(width: 120)
+                        Slider(value: $autoCleanInterval, in: 0...30, step: 1)
+                            .frame(width: 120)
+                            .onChange(of: autoCleanInterval) { _ in
+                                cleanupManager.refreshCleanupSchedule()
+                            }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                    if autoCleanInterval > 0 {
+                        HStack {
+                            Image(systemName: "timer")
+                                .font(.system(size: 12))
+                                .foregroundColor(.blue)
+                                .frame(width: 24)
+
+                            Text("下次清理")
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+
+                            Spacer()
+
+                            Text(cleanupManager.timeUntilNextCleanup)
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.05))
+                    }
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 0)
+                .padding(.vertical, 0)
             }
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)

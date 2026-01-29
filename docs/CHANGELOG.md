@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3]
+
+### Added
+- **智能清理系统**：实现自动清理管理器
+  - 新增 `ClipboardCleanupManager.swift` 工具类
+  - 支持基于时间间隔的自动清理（0-30天可配置）
+  - 后台定时检查，每小时自动执行清理任务
+  - 使用 CoreData 批量删除优化性能
+
+- **倒计时显示功能**
+  - 在设置页面显示下次清理的倒计时
+  - 实时更新倒计时（每分钟自动刷新）
+  - 智能格式化显示（"X天X小时后" / "X小时X分钟后" / "X分钟后"）
+  - 当清理间隔为0时显示"未启用"
+
+### Changed
+- 更新 `SettingsView.swift`：集成清理管理器和倒计时显示
+- 更新 `iCopyApp.swift`：在应用启动时初始化清理管理器
+- 优化自动清理设置界面，添加蓝色高亮的倒计时提示区域
+
+### Technical
+- 持久化上次清理时间到 UserDefaults
+- 使用 `@Published` 属性实现响应式倒计时更新
+- 使用 `NSBatchDeleteRequest` 提升大量数据删除性能
+- 实现定时器自动管理和资源清理
+
 ## [1.0.1]
 
 ### Added
