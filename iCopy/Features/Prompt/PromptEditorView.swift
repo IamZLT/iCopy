@@ -35,102 +35,133 @@ struct PromptEditorView: View {
     }
 
     var body: some View {
-        ZStack {
-            // 背景色
-            Color(NSColor.windowBackgroundColor)
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                // 顶部标题栏
-                HStack {
-                    Text(isEditing ? "编辑提示词" : "添加提示词")
-                        .font(.title2)
-                        .bold()
-                    Spacer()
-                    Button("取消") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.escape)
-                }
-                .padding()
-
-                Divider()
-
-                // 表单内容
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        formContent
-                    }
-                    .padding()
-                }
-
-                Divider()
-
-                // 底部按钮栏
-                HStack {
-                    Spacer()
-                    Button("取消") {
-                        dismiss()
-                    }
-                    .keyboardShortcut(.escape)
-
-                    Button(isEditing ? "保存" : "添加") {
-                        savePrompt()
-                    }
-                    .keyboardShortcut(.return)
-                    .disabled(title.isEmpty || content.isEmpty)
-                }
-                .padding()
+        VStack(spacing: 0) {
+            // 表单内容
+            VStack(alignment: .leading, spacing: 16) {
+                formContent
             }
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+
+            // 底部按钮栏
+            footerView
+                .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         }
+        .background(Color(NSColor.windowBackgroundColor))
         .frame(width: 600, height: 500)
+    }
+    // 底部按钮栏
+    private var footerView: some View {
+        HStack(spacing: 10) {
+            Spacer()
+
+            Button(action: { dismiss() }) {
+                Text("取消")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
+                    .frame(minWidth: 70)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(7)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .keyboardShortcut(.escape)
+
+            Button(action: { savePrompt() }) {
+                Text(isEditing ? "保存" : "添加")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(minWidth: 70)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(7)
+                    .shadow(color: Color.accentColor.opacity(0.3), radius: 6, x: 0, y: 3)
+                    .opacity(title.isEmpty || content.isEmpty ? 0.5 : 1.0)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .keyboardShortcut(.return)
+            .disabled(title.isEmpty || content.isEmpty)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 
     // 表单内容
     private var formContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 16) {
             // 标题输入
-            VStack(alignment: .leading, spacing: 8) {
-                Text("标题 *")
-                    .font(.headline)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Text("标题")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("*")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.red)
+                }
                 TextField("请输入提示词标题", text: $title)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 13))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(title.isEmpty ? Color.red.opacity(0.3) : Color.clear, lineWidth: 1)
+                    )
             }
 
             // 分组选择
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("分组")
-                    .font(.headline)
+                    .font(.system(size: 13, weight: .semibold))
                 if categories.isEmpty {
-                    Text("暂无分组，请先在提示词管理页面创建分组")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 8)
+                    HStack(spacing: 6) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 11))
+                            .foregroundColor(.orange)
+                        Text("暂无分组")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(6)
                 } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
+                    HorizontalScrollView {
                         HStack(spacing: 8) {
-                            // "无分组"选项
                             Button(action: { selectedCategoryID = nil }) {
                                 Text("无分组")
+                                    .font(.system(size: 12, weight: .medium))
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(selectedCategoryID == nil ? Color.blue : Color(NSColor.controlBackgroundColor))
+                                    .background(selectedCategoryID == nil ? Color.accentColor : Color(NSColor.controlBackgroundColor))
                                     .foregroundColor(selectedCategoryID == nil ? .white : .primary)
                                     .cornerRadius(6)
                             }
                             .buttonStyle(PlainButtonStyle())
 
-                            // 数据库分组选项
                             ForEach(categories) { category in
                                 Button(action: { selectedCategoryID = category.id }) {
                                     HStack(spacing: 4) {
                                         Image(systemName: category.icon ?? "folder")
-                                            .font(.caption)
+                                            .font(.system(size: 10))
                                         Text(category.name ?? "未命名")
+                                            .font(.system(size: 12, weight: .medium))
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
-                                    .background(selectedCategoryID == category.id ? Color.blue : Color(NSColor.controlBackgroundColor))
+                                    .background(selectedCategoryID == category.id ? Color.accentColor : Color(NSColor.controlBackgroundColor))
                                     .foregroundColor(selectedCategoryID == category.id ? .white : .primary)
                                     .cornerRadius(6)
                                 }
@@ -138,29 +169,77 @@ struct PromptEditorView: View {
                             }
                         }
                     }
+                    .frame(height: 32)
                 }
             }
 
             // 内容输入
-            VStack(alignment: .leading, spacing: 8) {
-                Text("内容 *")
-                    .font(.headline)
-                TextEditor(text: $content)
-                    .frame(height: 200)
-                    .border(Color.gray.opacity(0.3), width: 1)
-                    .cornerRadius(4)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 4) {
+                    Text("内容")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("*")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.red)
+                }
+                ZStack(alignment: .topLeading) {
+                    if content.isEmpty {
+                        Text("请输入提示词内容...")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary.opacity(0.5))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                    }
+                    TextEditor(text: $content)
+                        .font(.system(size: 13))
+                        .frame(height: 180)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .scrollContentBackground(.hidden)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(content.isEmpty ? Color.red.opacity(0.3) : Color.clear, lineWidth: 1)
+                        )
+                }
             }
 
-            // 标签输入
-            VStack(alignment: .leading, spacing: 8) {
-                Text("标签（可选）")
-                    .font(.headline)
-                TextField("用逗号分隔多个标签", text: $tags)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-            }
+            // 标签输入和收藏选项（合并为一行）
+            HStack(spacing: 12) {
+                // 标签输入
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("标签（可选）")
+                        .font(.system(size: 13, weight: .semibold))
+                    TextField("用逗号分隔", text: $tags)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .font(.system(size: 13))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color(NSColor.controlBackgroundColor))
+                        .cornerRadius(6)
+                }
 
-            // 收藏选项
-            Toggle("收藏此提示词", isOn: $isFavorite)
+                // 收藏选项
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("收藏")
+                        .font(.system(size: 13, weight: .semibold))
+                    HStack(spacing: 8) {
+                        Image(systemName: isFavorite ? "star.fill" : "star")
+                            .font(.system(size: 14))
+                            .foregroundColor(isFavorite ? .yellow : .gray)
+
+                        Toggle("", isOn: $isFavorite)
+                            .labelsHidden()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .cornerRadius(6)
+                }
+                .frame(width: 120)
+            }
         }
     }
 

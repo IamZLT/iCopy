@@ -12,26 +12,19 @@ struct CategoryManagementView: View {
     private var categories: FetchedResults<PromptCategory>
 
     var body: some View {
-        ZStack {
-            // 背景色
-            Color(NSColor.windowBackgroundColor)
-                .ignoresSafeArea()
+        VStack(spacing: 0) {
+            // 顶部标题栏
+            headerView
+                .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
 
-            VStack(spacing: 0) {
-                // 顶部标题栏
-                headerView
+            // 分组列表
+            categoryListView
 
-                Divider()
-
-                // 分组列表
-                categoryListView
-
-                Divider()
-
-                // 底部按钮
-                footerView
-            }
+            // 底部按钮
+            footerView
+                .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
         }
+        .background(Color(NSColor.windowBackgroundColor))
         .frame(width: 500, height: 400)
     }
 
@@ -41,15 +34,20 @@ struct CategoryManagementView: View {
             ZStack {
                 Circle()
                     .fill(Color.orange.opacity(0.15))
-                    .frame(width: 36, height: 36)
+                    .frame(width: 40, height: 40)
 
                 Image(systemName: "folder.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.orange)
             }
 
-            Text("分组管理")
-                .font(.system(size: 20, weight: .semibold))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("分组管理")
+                    .font(.system(size: 20, weight: .bold))
+                Text("\(categories.count) 个分组")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
 
             Spacer()
 
@@ -71,7 +69,13 @@ struct CategoryManagementView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
-                .background(Color.accentColor)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .cornerRadius(8)
                 .shadow(color: Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
             }
@@ -85,16 +89,25 @@ struct CategoryManagementView: View {
     private var categoryListView: some View {
         ScrollView {
             if categories.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "folder.badge.plus")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary.opacity(0.5))
-                    Text("暂无分组")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Text("点击右上角按钮创建第一个分组")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary.opacity(0.8))
+                VStack(spacing: 20) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.orange.opacity(0.1))
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: "folder.badge.plus")
+                            .font(.system(size: 40))
+                            .foregroundColor(.orange.opacity(0.6))
+                    }
+
+                    VStack(spacing: 8) {
+                        Text("暂无分组")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.primary)
+                        Text("点击右上角按钮创建第一个分组")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding()
@@ -130,9 +143,15 @@ struct CategoryManagementView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(minWidth: 100)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 20)
-                    .background(Color.accentColor)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 24)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .cornerRadius(8)
                     .shadow(color: Color.accentColor.opacity(0.3), radius: 8, x: 0, y: 4)
             }
