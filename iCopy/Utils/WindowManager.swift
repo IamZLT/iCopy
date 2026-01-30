@@ -36,7 +36,9 @@ class WindowManager {
 
         window.title = title
         window.setContentSize(size)
-        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.styleMask = [.titled, .closable, .miniaturizable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
         window.center()
         window.makeKeyAndOrderFront(nil)

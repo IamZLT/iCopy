@@ -41,12 +41,12 @@ struct PromptEditorView: View {
                 formContent
             }
             .padding(.horizontal, 24)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
+            .padding(.top, 32)
+            .padding(.bottom, 8)
 
             // 底部按钮栏
             footerView
-                .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                .background(Color(NSColor.windowBackgroundColor))
         }
         .background(Color(NSColor.windowBackgroundColor))
         .frame(width: 600, height: 500)
@@ -91,8 +91,9 @@ struct PromptEditorView: View {
             .keyboardShortcut(.return)
             .disabled(title.isEmpty || content.isEmpty)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 40)
     }
 
     // 表单内容
@@ -142,8 +143,10 @@ struct PromptEditorView: View {
                         HStack(spacing: 8) {
                             Button(action: { selectedCategoryID = nil }) {
                                 Text("无分组")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .padding(.horizontal, 12)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .lineLimit(1)
+                                    .frame(minWidth: 60)
+                                    .padding(.horizontal, 16)
                                     .padding(.vertical, 6)
                                     .background(selectedCategoryID == nil ? Color.accentColor : Color(NSColor.controlBackgroundColor))
                                     .foregroundColor(selectedCategoryID == nil ? .white : .primary)
@@ -153,13 +156,16 @@ struct PromptEditorView: View {
 
                             ForEach(categories) { category in
                                 Button(action: { selectedCategoryID = category.id }) {
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: 6) {
                                         Image(systemName: category.icon ?? "folder")
-                                            .font(.system(size: 10))
+                                            .font(.system(size: 11))
+                                            .frame(width: 12)
                                         Text(category.name ?? "未命名")
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(.system(size: 13, weight: .medium))
+                                            .lineLimit(1)
                                     }
-                                    .padding(.horizontal, 12)
+                                    .frame(minWidth: 60)
+                                    .padding(.horizontal, 16)
                                     .padding(.vertical, 6)
                                     .background(selectedCategoryID == category.id ? Color.accentColor : Color(NSColor.controlBackgroundColor))
                                     .foregroundColor(selectedCategoryID == category.id ? .white : .primary)
@@ -235,7 +241,7 @@ struct PromptEditorView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(Color(NSColor.controlBackgroundColor))
                     .cornerRadius(6)
                 }
                 .frame(width: 120)

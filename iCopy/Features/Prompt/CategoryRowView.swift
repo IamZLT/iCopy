@@ -10,37 +10,50 @@ struct CategoryRowView: View {
     @State private var isHovered = false
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
+            // 拖动手柄
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 14))
+                .foregroundColor(.secondary.opacity(0.5))
+                .frame(width: 20)
+
             // 图标
             ZStack {
                 Circle()
                     .fill(colorFromString(category.color ?? "blue").opacity(0.15))
-                    .frame(width: 48, height: 48)
+                    .frame(width: 36, height: 36)
 
                 Image(systemName: category.icon ?? "folder")
-                    .font(.system(size: 20, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(colorFromString(category.color ?? "blue"))
             }
 
-            // 名称和数量
-            VStack(alignment: .leading, spacing: 4) {
-                Text(category.name ?? "未命名")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.primary)
+            // 名称
+            Text(category.name ?? "未命名")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
 
-                Text("\(category.prompts?.count ?? 0) 个提示词")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+            // 数量标签
+            HStack(spacing: 4) {
+                Text("\(category.prompts?.count ?? 0)")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("项")
+                    .font(.system(size: 11))
             }
+            .foregroundColor(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+            .cornerRadius(10)
 
             Spacer()
 
             // 操作按钮（悬停时显示）
             if isHovered {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Button(action: onEdit) {
                         Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 24))
+                            .font(.system(size: 20))
                             .foregroundColor(.accentColor)
                             .symbolRenderingMode(.hierarchical)
                     }
@@ -48,7 +61,7 @@ struct CategoryRowView: View {
 
                     Button(action: { showingDeleteAlert = true }) {
                         Image(systemName: "trash.circle.fill")
-                            .font(.system(size: 24))
+                            .font(.system(size: 20))
                             .foregroundColor(.red)
                             .symbolRenderingMode(.hierarchical)
                     }
@@ -57,16 +70,16 @@ struct CategoryRowView: View {
                 .transition(.scale.combined(with: .opacity))
             }
         }
-        .padding(16)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 8)
                 .fill(Color(NSColor.controlBackgroundColor))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(isHovered ? Color.accentColor.opacity(0.3) : Color.gray.opacity(0.1), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isHovered ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
         )
-        .shadow(color: isHovered ? Color.black.opacity(0.1) : Color.clear, radius: 8, x: 0, y: 4)
         .onHover { hovering in
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 isHovered = hovering
