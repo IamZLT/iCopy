@@ -45,7 +45,10 @@ iCopy 是一个功能强大的 macOS 应用，集成了**剪贴板历史管理**
 - macOS 11.0 或更高版本
 - Xcode 13.0 或更高版本（开发）
 
-### 安装步骤
+
+### 安装或使用步骤
+
+详细安装或使用方式见 [QUICKSTART.md](docs/QUICKSTART.md)
 
 1. 克隆项目到本地
 ```bash
@@ -167,7 +170,7 @@ iCopy/
     └── HorizontalScrollView.swift      # 横向滚动视图
 ```
 
-详细架构说明请查看 [ARCHITECTURE.md](ARCHITECTURE.md)
+详细架构说明请查看 [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ### 数据模型
 - **ClipboardItem**：剪贴板历史项
