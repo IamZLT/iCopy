@@ -34,7 +34,7 @@ struct CategoryManagementView: View {
                     WindowManager.shared.showWindow(
                         id: "addCategory",
                         title: "新建分组",
-                        size: NSSize(width: 480, height: 380),
+                        size: NSSize(width: 480, height: 440),
                         content: CategoryEditorView(category: nil)
                             .environment(\.managedObjectContext, viewContext)
                     )
@@ -60,8 +60,9 @@ struct CategoryManagementView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 30)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
             .background(Color(NSColor.windowBackgroundColor))
 
             // 分组列表
@@ -73,7 +74,7 @@ struct CategoryManagementView: View {
                 .background(Color(NSColor.windowBackgroundColor))
         }
         .background(Color(NSColor.windowBackgroundColor))
-        .frame(width: 500, height: 400)
+        .frame(width: 600, height: 450)
     }
 
     // 分组列表
@@ -110,14 +111,14 @@ struct CategoryManagementView: View {
                                 WindowManager.shared.showWindow(
                                     id: "editCategory_\(category.id?.uuidString ?? "")",
                                     title: "编辑分组",
-                                    size: NSSize(width: 480, height: 380),
+                                    size: NSSize(width: 480, height: 440),
                                     content: CategoryEditorView(category: category)
                                         .environment(\.managedObjectContext, viewContext)
                                 )
                             },
                             onDelete: { deleteCategory(category) }
                         )
-                        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+                        .listRowInsets(EdgeInsets(top: 6, leading: 30, bottom: 6, trailing: 30))
                         .listRowSeparator(.hidden)
                     }
                     .onMove(perform: moveCategory)
@@ -152,8 +153,9 @@ struct CategoryManagementView: View {
             .buttonStyle(PlainButtonStyle())
             .keyboardShortcut(.escape)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 30)
+        .padding(.top, 16)
+        .padding(.bottom, 24)
     }
 
     // 删除分组

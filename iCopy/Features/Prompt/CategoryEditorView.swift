@@ -43,7 +43,7 @@ struct CategoryEditorView: View {
                 .background(Color(NSColor.windowBackgroundColor))
         }
         .background(Color(NSColor.windowBackgroundColor))
-        .frame(width: 480, height: 380)
+        .frame(width: 480, height: 440)
     }
     // 表单内容
     private var formContent: some View {
@@ -61,63 +61,60 @@ struct CategoryEditorView: View {
                     .cornerRadius(6)
             }
 
-            // 图标和颜色选择（合并为一行）
-            HStack(alignment: .top, spacing: 16) {
-                // 图标选择
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("图标")
-                        .font(.system(size: 13, weight: .semibold))
-                    HorizontalScrollView {
-                        HStack(spacing: 8) {
-                            ForEach(availableIcons, id: \.self) { icon in
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        selectedIcon = icon
-                                    }
-                                }) {
-                                    Image(systemName: icon)
-                                        .font(.system(size: 16))
-                                        .foregroundColor(selectedIcon == icon ? .white : .primary)
-                                        .frame(width: 40, height: 40)
-                                        .background(selectedIcon == icon ? Color.accentColor : Color(NSColor.controlBackgroundColor))
-                                        .cornerRadius(8)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                    }
-                    .frame(height: 40)
-                }
-
-                // 颜色选择
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("颜色")
-                        .font(.system(size: 13, weight: .semibold))
+            // 图标选择
+            VStack(alignment: .leading, spacing: 6) {
+                Text("图标")
+                    .font(.system(size: 13, weight: .semibold))
+                HorizontalScrollView {
                     HStack(spacing: 8) {
-                        ForEach(availableColors, id: \.self) { color in
+                        ForEach(availableIcons, id: \.self) { icon in
                             Button(action: {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedColor = color
+                                    selectedIcon = icon
                                 }
                             }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(colorFromString(color))
-                                        .frame(width: 32, height: 32)
-                                    
-                                    if selectedColor == color {
-                                        Circle()
-                                            .stroke(Color.white, lineWidth: 2)
-                                            .frame(width: 32, height: 32)
-                                        
-                                        Circle()
-                                            .stroke(colorFromString(color), lineWidth: 1.5)
-                                            .frame(width: 38, height: 38)
-                                    }
-                                }
+                                Image(systemName: icon)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(selectedIcon == icon ? .white : .primary)
+                                    .frame(width: 40, height: 40)
+                                    .background(selectedIcon == icon ? Color.accentColor : Color(NSColor.controlBackgroundColor))
+                                    .cornerRadius(8)
                             }
                             .buttonStyle(PlainButtonStyle())
                         }
+                    }
+                }
+                .frame(height: 40)
+            }
+
+            // 颜色选择
+            VStack(alignment: .leading, spacing: 6) {
+                Text("颜色")
+                    .font(.system(size: 13, weight: .semibold))
+                HStack(spacing: 8) {
+                    ForEach(availableColors, id: \.self) { color in
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedColor = color
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(colorFromString(color))
+                                    .frame(width: 32, height: 32)
+
+                                if selectedColor == color {
+                                    Circle()
+                                        .stroke(Color.white, lineWidth: 2)
+                                        .frame(width: 32, height: 32)
+
+                                    Circle()
+                                        .stroke(colorFromString(color), lineWidth: 1.5)
+                                        .frame(width: 38, height: 38)
+                                }
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
