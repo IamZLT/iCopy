@@ -7,15 +7,11 @@ struct iCopyApp: App {
     let persistenceController = PersistenceController.shared
     @StateObject private var permissionManager = PermissionManager.shared
     @StateObject private var cleanupManager = ClipboardCleanupManager.shared
-    @State private var showPermissionGuide = false
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .sheet(isPresented: $showPermissionGuide) {
-                    PermissionGuideView()
-                }
                 .onAppear {
                     checkPermissionsOnLaunch()
                 }
@@ -36,7 +32,7 @@ struct iCopyApp: App {
         // 延迟显示权限引导，避免与窗口初始化冲突
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             if !permissionManager.hasAllRequiredPermissions() {
-                showPermissionGuide = true
+                WindowManager.shared.showPermissionGuide()
             }
         }
     }

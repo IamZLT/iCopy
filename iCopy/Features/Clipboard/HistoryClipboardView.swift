@@ -4,13 +4,26 @@ import CoreData
 import UniformTypeIdentifiers
 import AVFoundation
 
+// Alert 类型枚举
+enum ClipboardAlertType: Identifiable {
+    case clear
+    case delete(ClipboardItem)
+
+    var id: String {
+        switch self {
+        case .clear: return "clear"
+        case .delete(let item): return "delete_\(item.timestamp?.timeIntervalSince1970 ?? 0)"
+        }
+    }
+}
+
 struct HistoryClipboardView: View {
     @AppStorage("maxHistoryCount") private var maxHistoryCount: String = "100"
     @State private var lastChangeCount: Int = 0
     @State private var clipboardTimer: Timer?
     @State private var searchText: String = ""
     @State private var selectedCategory: String? = nil
-    @State private var showingClearAlert = false
+    @State private var activeAlert: ClipboardAlertType? = nil
 
     @Environment(\.managedObjectContext) private var viewContext
     @FetchRequest(
@@ -52,7 +65,7 @@ struct HistoryClipboardView: View {
 
                 Spacer()
 
-                Button(action: { showingClearAlert = true }) {
+                Button(action: { activeAlert = .clear }) {
                     HStack(spacing: 6) {
                         Image(systemName: "trash.fill")
                             .font(.system(size: 13))
@@ -89,15 +102,27 @@ struct HistoryClipboardView: View {
             clipboardTimer?.invalidate()
             clipboardTimer = nil
         }
-        .alert(isPresented: $showingClearAlert) {
-            Alert(
-                title: Text("确认清空"),
-                message: Text("确定要清空所有剪切板历史记录吗？此操作无法撤销。"),
-                primaryButton: .destructive(Text("清空")) {
-                    clearAllClipboard()
-                },
-                secondaryButton: .cancel(Text("取消"))
-            )
+        .alert(item: $activeAlert) { alertType in
+            switch alertType {
+            case .clear:
+                return Alert(
+                    title: Text("确认清空"),
+                    message: Text("确定要清空所有剪切板历史记录吗？此操作无法撤销。"),
+                    primaryButton: .destructive(Text("清空")) {
+                        clearAllClipboard()
+                    },
+                    secondaryButton: .cancel(Text("取消"))
+                )
+            case .delete(let item):
+                return Alert(
+                    title: Text("确认删除"),
+                    message: Text("确定要删除这个剪切板项目吗？此操作无法撤销。"),
+                    primaryButton: .destructive(Text("删除")) {
+                        deleteItem(item)
+                    },
+                    secondaryButton: .cancel(Text("取消"))
+                )
+            }
         }
     }
 
@@ -220,7 +245,9 @@ struct HistoryClipboardView: View {
                     ClipboardItemCard(
                         item: item,
                         onCopy: { copyToClipboard(item) },
-                        onDelete: { deleteItem(item) },
+                        onDelete: {
+                            activeAlert = .delete(item)
+                        },
                         onDetail: {
                             previewClipboardItem(item)
                         }
@@ -415,7 +442,15 @@ struct HistoryClipboardView: View {
     private func deleteItem(_ item: ClipboardItem) {
         withAnimation {
             viewContext.delete(item)
-            try? viewContext.save()
+
+            do {
+                try viewContext.save()
+                print("✅ 成功删除剪切板项目")
+            } catch {
+                print("❌ 删除剪切板项目失败: \(error.localizedDescription)")
+                // 如果保存失败，回滚更改
+                viewContext.rollback()
+            }
         }
     }
 

@@ -9,7 +9,6 @@ struct ClipboardItemCard: View {
 
     @State private var isHovered = false
     @State private var isCopied = false
-    @State private var showingDeleteAlert = false
 
     // 是否应该显示缩略图
     private var shouldShowThumbnail: Bool {
@@ -41,16 +40,6 @@ struct ClipboardItemCard: View {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 isHovered = hovering
             }
-        }
-        .alert(isPresented: $showingDeleteAlert) {
-            Alert(
-                title: Text("确认删除"),
-                message: Text("确定要删除这个剪切板项目吗？此操作无法撤销。"),
-                primaryButton: .destructive(Text("删除")) {
-                    onDelete()
-                },
-                secondaryButton: .cancel(Text("取消"))
-            )
         }
     }
 
@@ -222,6 +211,9 @@ struct ClipboardItemCard: View {
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .foregroundColor(.blue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
 
@@ -233,10 +225,13 @@ struct ClipboardItemCard: View {
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .foregroundColor(isCopied ? .green : .accentColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
 
-                    Button(action: { showingDeleteAlert = true }) {
+                    Button(action: onDelete) {
                         HStack(spacing: 4) {
                             Image(systemName: "trash.circle")
                                 .font(.system(size: 12))
@@ -244,6 +239,9 @@ struct ClipboardItemCard: View {
                                 .font(.system(size: 12, weight: .medium))
                         }
                         .foregroundColor(.red)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                 }

@@ -323,4 +323,23 @@ class WindowManager {
         pasteboard.clearContents()
         pasteboard.setString(prompt.content ?? "", forType: .string)
     }
+
+    // MARK: - 显示权限设置窗口
+    func showPermissionGuide() {
+        let windowId = "permissionGuide"
+
+        // 如果窗口已存在，先关闭
+        closeWindow(id: windowId)
+
+        // 创建权限设置视图
+        let permissionView = PermissionGuideView()
+
+        // 使用通用的 showWindow 方法显示
+        showWindow(
+            id: windowId,
+            title: "权限设置",
+            size: NSSize(width: 500, height: 320),
+            content: permissionView
+        )
+    }
 }
